@@ -1,7 +1,7 @@
 package com.anagaf.tbilisibus
 
 import com.anagaf.tbilisibus.data.BusLocationProvider
-import com.anagaf.tbilisibus.data.TtlBusLocationProvider
+import com.anagaf.tbilisibus.data.ttl.TtlBusLocationProvider
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

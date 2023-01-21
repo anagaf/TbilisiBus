@@ -49,8 +49,14 @@ dependencies {
     implementation "androidx.activity:activity-ktx:1.6.1"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.5.1"
 
+    implementation "com.squareup.retrofit2:retrofit:2.9.0"
+    implementation "com.squareup.retrofit2:converter-jackson:2.9.0"
+    implementation 'com.squareup.okhttp3:logging-interceptor:3.9.1'
+
     implementation "com.google.dagger:hilt-android:2.44"
     kapt "com.google.dagger:hilt-compiler:2.44"
+
+    implementation 'io.github.microutils:kotlin-logging-jvm:3.0.2'
 
     testImplementation 'junit:junit:4.13.2'
 
