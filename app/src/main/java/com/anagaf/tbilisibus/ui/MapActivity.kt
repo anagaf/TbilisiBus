@@ -21,7 +21,9 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 
 import com.anagaf.tbilisibus.databinding.ActivityMapsBinding
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MapActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var mMap: GoogleMap
@@ -54,6 +56,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onStart() {
         super.onStart()
+        mapViewModel.start()
         if (!isLocationPermissionGranted()) {
             requestPermissionLauncher.launch(
                 Manifest.permission.ACCESS_FINE_LOCATION

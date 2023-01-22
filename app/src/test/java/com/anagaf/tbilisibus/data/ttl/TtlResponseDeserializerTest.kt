@@ -2,8 +2,8 @@ package com.anagaf.tbilisibus.data.ttl
 
 import com.anagaf.tbilisibus.data.BusLocation
 import com.anagaf.tbilisibus.data.Coords
+import com.anagaf.tbilisibus.data.BusLocations
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.junit.Assert
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -23,7 +23,7 @@ class TtlResponseDeserializerTest {
             BusLocation(Coords(41.76619056790743, 44.77884267730354)),
             BusLocation(Coords(41.74894996470203, 44.777173414131894)),
         )
-        val expectedResponse = TtlResponse(expectedBusLocations)
+        val expectedResponse = BusLocations(expectedBusLocations)
         assertEquals(expectedResponse, response)
     }
 }

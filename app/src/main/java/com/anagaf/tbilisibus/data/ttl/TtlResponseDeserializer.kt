@@ -2,18 +2,19 @@ package com.anagaf.tbilisibus.data.ttl
 
 import com.anagaf.tbilisibus.data.BusLocation
 import com.anagaf.tbilisibus.data.Coords
+import com.anagaf.tbilisibus.data.BusLocations
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.JsonNode
 
-class TtlResponseDeserializer : JsonDeserializer<TtlResponse>() {
+class TtlResponseDeserializer : JsonDeserializer<BusLocations>() {
 
     override fun deserialize(
         parser: JsonParser?,
         ctxt: DeserializationContext?
-    ): TtlResponse {
+    ): BusLocations {
         val busLocations = mutableListOf<BusLocation>()
 
         val rootNode: JsonNode = parser?.codec?.readTree(parser)
@@ -22,7 +23,7 @@ class TtlResponseDeserializer : JsonDeserializer<TtlResponse>() {
         busArray.elements().forEach {
             busLocations.add(parseBusLocation(it))
         }
-        return TtlResponse(busLocations)
+        return BusLocations(busLocations)
     }
 
     private fun parseBusLocation(node: JsonNode): BusLocation {

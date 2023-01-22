@@ -1,7 +1,7 @@
 package com.anagaf.tbilisibus
 
-import com.anagaf.tbilisibus.data.BusLocationProvider
-import com.anagaf.tbilisibus.data.ttl.TtlBusLocationProvider
+import com.anagaf.tbilisibus.data.BusLocationsProvider
+import com.anagaf.tbilisibus.data.ttl.TtlBusLocationsProvider
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -13,6 +13,6 @@ abstract class BusLocationModule {
 
     @Binds
     abstract fun bindBusLocationProvider(
-        ttlBusLocationProvider: TtlBusLocationProvider
-    ): BusLocationProvider
+        ttlBusLocationProvider: TtlBusLocationsProvider
+    ): BusLocationsProvider
 }
