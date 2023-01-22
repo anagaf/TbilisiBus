@@ -1,0 +1,18 @@
+{
+  "bus": [
+    {
+      "routeNumber": "306",
+      "forward": true,
+      "lon": 44.77884267730354,
+      "lat": 41.76619056790743,
+      "nextStopId": "3527"
+    },
+    {
+      "routeNumber": "306",
+      "forward": true,
+      "lon": 44.777173414131894,
+      "lat": 41.74894996470203,
+      "nextStopId": "903"
+    }
+  ]
+}

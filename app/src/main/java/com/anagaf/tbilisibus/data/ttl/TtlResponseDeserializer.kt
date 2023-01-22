@@ -18,7 +18,8 @@ class TtlResponseDeserializer : JsonDeserializer<TtlResponse>() {
 
         val rootNode: JsonNode = parser?.codec?.readTree(parser)
             ?: throw JsonParseException(parser, "Cannot access root node")
-        rootNode.withArray("bus").elements().forEach {
+        val busArray = rootNode.get("bus")
+        busArray.elements().forEach {
             busLocations.add(parseBusLocation(it))
         }
         return TtlResponse(busLocations)
