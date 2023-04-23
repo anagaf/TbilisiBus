@@ -3,24 +3,19 @@ package com.anagaf.tbilisibus.ui
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
-import androidx.appcompat.app.AppCompatActivity
-
 import android.os.Bundle
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.core.app.ActivityCompat
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.ViewModelProvider
 import com.anagaf.tbilisibus.R
-
-import com.google.android.gms.maps.CameraUpdateFactory
+import com.anagaf.tbilisibus.databinding.ActivityMapsBinding
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
-
-import com.anagaf.tbilisibus.databinding.ActivityMapsBinding
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -31,12 +26,14 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private val mapViewModel: MapViewModel by viewModels()
 
+    private val markers = mutableListOf<Marker>()
+
     private val requestPermissionLauncher =
         registerForActivityResult(
             ActivityResultContracts.RequestPermission()
         ) { isGranted: Boolean ->
             if (isGranted) {
-                enableMyLocationMapControls();
+                enableMyLocationMapControls()
             } else {
                 // TODO: dialog
             }
@@ -60,7 +57,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         if (!isLocationPermissionGranted()) {
             requestPermissionLauncher.launch(
                 Manifest.permission.ACCESS_FINE_LOCATION
-            );
+            )
         }
     }
 
@@ -80,6 +77,24 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
 
         if (isLocationPermissionGranted()) {
             enableMyLocationMapControls()
+
+            mapViewModel.busLocations.observe(this) { busLocations ->
+                markers.forEach {
+                    it.remove()
+                }
+                markers.clear()
+
+                // Add markers for each location
+                busLocations.forEach { location ->
+                    val markerOptions = MarkerOptions()
+                        .position(LatLng(location.coords.lat, location.coords.lon))
+                        .title("Bus #306")
+                    val marker = mMap.addMarker(markerOptions)
+                    if (marker != null) {
+                        markers.add(marker)
+                    }
+                }
+            }
         }
     }
 

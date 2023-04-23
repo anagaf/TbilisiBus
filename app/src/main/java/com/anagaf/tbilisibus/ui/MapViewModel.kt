@@ -17,7 +17,7 @@ class MapViewModel @Inject constructor(
 
     val inProgress: MutableLiveData<Boolean> = MutableLiveData()
 
-    internal val busLocations = MutableLiveData<List<BusLocation>>(emptyList());
+    internal val busLocations = MutableLiveData<List<BusLocation>>(emptyList())
 
     fun start() {
         Log.i("MapViewModel", "start map view model")
@@ -29,6 +29,7 @@ class MapViewModel @Inject constructor(
             bus306Locations.locations.forEach() {
                 Log.i("MapViewModel", "-- ${it.coords.lat}, ${it.coords.lon}")
             }
+            busLocations.value = bus306Locations.locations
 
             inProgress.value = false
         }
