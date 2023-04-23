@@ -25,11 +25,11 @@ class MapViewModel @Inject constructor(
             inProgress.value = true
 
             val bus306Locations = busLocationProvider.getBusLocations(306)
-            Log.i("MapViewModel", "${bus306Locations.locations.size} locations found for bus #306:")
-            bus306Locations.locations.forEach() {
+            Log.i("MapViewModel", "${bus306Locations.size} locations found for bus #306:")
+            bus306Locations.forEach() {
                 Log.i("MapViewModel", "-- ${it.coords.lat}, ${it.coords.lon}")
             }
-            busLocations.value = bus306Locations.locations
+            busLocations.value = bus306Locations
 
             inProgress.value = false
         }

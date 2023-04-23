@@ -9,10 +9,12 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.anagaf.tbilisibus.R
+import com.anagaf.tbilisibus.data.Direction
 import com.anagaf.tbilisibus.databinding.ActivityMapsBinding
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
@@ -86,9 +88,16 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
 
                 // Add markers for each location
                 busLocations.forEach { location ->
+                    val markerColor =
+                        if (location.direction == Direction.Forward) BitmapDescriptorFactory.HUE_RED else
+                            BitmapDescriptorFactory.HUE_BLUE;
                     val markerOptions = MarkerOptions()
                         .position(LatLng(location.coords.lat, location.coords.lon))
                         .title("Bus #306")
+                        .icon(
+                            BitmapDescriptorFactory
+                                .defaultMarker(markerColor)
+                        )
                     val marker = mMap.addMarker(markerOptions)
                     if (marker != null) {
                         markers.add(marker)

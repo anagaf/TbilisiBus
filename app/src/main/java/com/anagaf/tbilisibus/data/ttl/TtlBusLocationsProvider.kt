@@ -1,7 +1,9 @@
 package com.anagaf.tbilisibus.data.ttl
 
+import com.anagaf.tbilisibus.data.BusLocation
 import com.anagaf.tbilisibus.data.BusLocationsProvider
 import com.anagaf.tbilisibus.data.BusLocations
+import com.anagaf.tbilisibus.data.Direction
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +23,7 @@ class TtlBusLocationsProvider @Inject constructor() : BusLocationsProvider {
         val objectMapper = ObjectMapper()
 
         val objectMapperModule = SimpleModule()
-        objectMapperModule.addDeserializer(BusLocations::class.java, TtlResponseDeserializer())
+        objectMapperModule.addDeserializer(List::class.java, TtlResponseDeserializer())
         objectMapper.registerModule(objectMapperModule)
 
         val interceptor = HttpLoggingInterceptor()
@@ -46,11 +48,29 @@ class TtlBusLocationsProvider @Inject constructor() : BusLocationsProvider {
 
     private fun requestBusLocations(routeNumber: Int): BusLocations {
         logger.debug { "Making request" }
-        val response = retrofitService.getBusLocations(routeNumber).execute()
+
+        val forwardLocations = requestBusLocation(routeNumber, Direction.Forward)
+        val backwardLocations = requestBusLocation(routeNumber, Direction.Backward)
+
+        return forwardLocations + backwardLocations
+    }
+
+    private fun requestBusLocation(routeNumber: Int, direction: Direction): List<BusLocation> {
+        logger.debug { "Making request" }
+
+        val forward = getForwardDirectionCode(direction)
+        val response = retrofitService.getBusLocations(routeNumber, forward).execute()
         if (!response.isSuccessful) {
             throw java.lang.Exception("TTL request failed with code ${response.code()}")
         }
         logger.debug { "Request succeeded" }
         return response.body()!!
+    }
+
+    private fun getForwardDirectionCode(direction: Direction): Int {
+        return when (direction) {
+            Direction.Forward -> 1;
+            Direction.Backward -> 0;
+        }
     }
 }

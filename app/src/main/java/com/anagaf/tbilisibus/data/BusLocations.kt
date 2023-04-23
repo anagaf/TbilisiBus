@@ -1,3 +1,3 @@
 package com.anagaf.tbilisibus.data
 
-data class BusLocations(val locations: List<BusLocation>)
+typealias BusLocations = List<BusLocation>

@@ -7,5 +7,8 @@ import retrofit2.http.Query
 
 interface TtlRetrofitService {
     @GET("/otp/routers/ttc/buses")
-    fun getBusLocations(@Query("routeNumber") number: Int): Call<BusLocations>
+    fun getBusLocations(
+        @Query("routeNumber") number: Int,
+        @Query("forward") forward: Int
+    ): Call<BusLocations>
 }
