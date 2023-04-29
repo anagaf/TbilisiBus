@@ -1,8 +1,9 @@
 package com.anagaf.tbilisibus.data.ttl
 
-import com.anagaf.tbilisibus.data.BusLocation
-import com.anagaf.tbilisibus.data.BusLocationsProvider
 import com.anagaf.tbilisibus.data.BusLocations
+import com.anagaf.tbilisibus.data.BusOnRoute
+import com.anagaf.tbilisibus.data.BusesOnRoute
+import com.anagaf.tbilisibus.data.BusesOnRouteProvider
 import com.anagaf.tbilisibus.data.Direction
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
@@ -17,13 +18,13 @@ import javax.inject.Inject
 
 private val logger = KotlinLogging.logger {}
 
-class TtlBusLocationsProvider @Inject constructor() : BusLocationsProvider {
+class TtlBusesOnRouteProvider @Inject constructor() : BusesOnRouteProvider {
 
     private val retrofitService: TtlRetrofitService by lazy {
         val objectMapper = ObjectMapper()
 
         val objectMapperModule = SimpleModule()
-        objectMapperModule.addDeserializer(List::class.java, TtlResponseDeserializer())
+        objectMapperModule.addDeserializer(BusLocations::class.java, BusLocationsResponseParser())
         objectMapper.registerModule(objectMapperModule)
 
         val interceptor = HttpLoggingInterceptor()
@@ -40,22 +41,26 @@ class TtlBusLocationsProvider @Inject constructor() : BusLocationsProvider {
     }
 
 
-    override suspend fun getBusLocations(routeNumber: Int): BusLocations {
+    override suspend fun getBusesOnRoute(routeNumber: Int): BusesOnRoute {
         return withContext(Dispatchers.IO) {
-            requestBusLocations(routeNumber)
+            requestBusesOnRoute(routeNumber)
         }
     }
 
-    private fun requestBusLocations(routeNumber: Int): BusLocations {
+    private fun requestBusesOnRoute(routeNumber: Int): BusesOnRoute {
         logger.debug { "Making request" }
 
-        val forwardLocations = requestBusLocation(routeNumber, Direction.Forward)
-        val backwardLocations = requestBusLocation(routeNumber, Direction.Backward)
+        val forwardBuses = requestBusLocations(routeNumber, Direction.Forward).locations.map {
+            BusOnRoute(it, Direction.Forward)
+        }
+        val backwardBuses = requestBusLocations(routeNumber, Direction.Backward).locations.map {
+            BusOnRoute(it, Direction.Backward)
+        }
 
-        return forwardLocations + backwardLocations
+        return BusesOnRoute(forwardBuses + backwardBuses)
     }
 
-    private fun requestBusLocation(routeNumber: Int, direction: Direction): List<BusLocation> {
+    private fun requestBusLocations(routeNumber: Int, direction: Direction): BusLocations {
         logger.debug { "Making request" }
 
         val forward = getForwardDirectionCode(direction)
@@ -69,8 +74,8 @@ class TtlBusLocationsProvider @Inject constructor() : BusLocationsProvider {
 
     private fun getForwardDirectionCode(direction: Direction): Int {
         return when (direction) {
-            Direction.Forward -> 1;
-            Direction.Backward -> 0;
+            Direction.Forward -> 1
+            Direction.Backward -> 0
         }
     }
 }

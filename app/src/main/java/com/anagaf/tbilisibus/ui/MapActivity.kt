@@ -10,7 +10,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.Observer
 import com.anagaf.tbilisibus.R
 import com.anagaf.tbilisibus.data.Direction
 import com.anagaf.tbilisibus.databinding.ActivityMapBinding
@@ -103,7 +102,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                         if (location.direction == Direction.Forward) BitmapDescriptorFactory.HUE_RED else
                             BitmapDescriptorFactory.HUE_BLUE;
                     val markerOptions = MarkerOptions()
-                        .position(LatLng(location.coords.lat, location.coords.lon))
+                        .position(LatLng(location.location.lat, location.location.lon))
                         .title("Bus #306")
                         .icon(
                             BitmapDescriptorFactory
