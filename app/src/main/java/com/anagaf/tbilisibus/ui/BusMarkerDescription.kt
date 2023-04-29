@@ -1,10 +1,11 @@
 package com.anagaf.tbilisibus.ui
 
+import com.anagaf.tbilisibus.data.Direction
 import com.anagaf.tbilisibus.data.Location
 
 data class BusMarkerDescription(
     val location: Location,
     val title: String,
-    val hsv_color: Float,
-    val direction: Float
+    val direction: Direction,
+    val heading: Float?
 )

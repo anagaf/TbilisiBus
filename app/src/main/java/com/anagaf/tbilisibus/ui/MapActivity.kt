@@ -3,6 +3,8 @@ package com.anagaf.tbilisibus.ui
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -11,10 +13,12 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.anagaf.tbilisibus.R
+import com.anagaf.tbilisibus.data.Direction
 import com.anagaf.tbilisibus.databinding.ActivityMapBinding
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
@@ -105,10 +109,12 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                             )
                         )
                         .title("Bus #306")
-                        .icon(
-                            BitmapDescriptorFactory
-                                .defaultMarker(markerDescription.hsv_color)
-                        )
+                    val iconResId =
+                        if (markerDescription.direction == Direction.Forward) R.drawable.red_arrow else R.drawable.blue_arrow
+                    markerOptions.icon(makeMarkerDrawable(iconResId))
+                    if (markerDescription.heading != null) {
+                        markerOptions.rotation(markerDescription.heading)
+                    }
                     val marker = mMap.addMarker(markerOptions)
                     if (marker != null) {
                         markers.add(marker)
@@ -126,5 +132,22 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun enableMyLocationMapControls() {
         mMap.isMyLocationEnabled = true
         mMap.uiSettings.isMyLocationButtonEnabled = true
+    }
+
+    private fun makeMarkerDrawable(resId: Int): BitmapDescriptor {
+        val vectorDrawable = ContextCompat.getDrawable(this, resId)
+        vectorDrawable!!.setBounds(
+            0,
+            0,
+            vectorDrawable.intrinsicWidth,
+            vectorDrawable.intrinsicHeight
+        )
+        val bitmap = Bitmap.createBitmap(
+            vectorDrawable.intrinsicWidth,
+            vectorDrawable.intrinsicHeight,
+            Bitmap.Config.ARGB_8888
+        )
+        vectorDrawable.draw(Canvas(bitmap))
+        return BitmapDescriptorFactory.fromBitmap(bitmap)
     }
 }
