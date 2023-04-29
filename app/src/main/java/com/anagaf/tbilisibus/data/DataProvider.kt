@@ -1,5 +1,5 @@
 package com.anagaf.tbilisibus.data
 
-interface BusesOnRouteProvider {
+interface DataProvider {
     suspend fun getBusesOnRoute(routeNumber: Int): BusesOnRoute
 }

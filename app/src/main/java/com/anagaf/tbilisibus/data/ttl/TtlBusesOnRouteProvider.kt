@@ -1,9 +1,8 @@
 package com.anagaf.tbilisibus.data.ttl
 
 import com.anagaf.tbilisibus.data.BusLocations
-import com.anagaf.tbilisibus.data.BusOnRoute
 import com.anagaf.tbilisibus.data.BusesOnRoute
-import com.anagaf.tbilisibus.data.BusesOnRouteProvider
+import com.anagaf.tbilisibus.data.DataProvider
 import com.anagaf.tbilisibus.data.Direction
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
@@ -18,7 +17,7 @@ import javax.inject.Inject
 
 private val logger = KotlinLogging.logger {}
 
-class TtlBusesOnRouteProvider @Inject constructor() : BusesOnRouteProvider {
+class TtlBusesOnRouteProvider @Inject constructor() : DataProvider {
 
     private val retrofitService: TtlRetrofitService by lazy {
         val objectMapper = ObjectMapper()
@@ -48,16 +47,10 @@ class TtlBusesOnRouteProvider @Inject constructor() : BusesOnRouteProvider {
     }
 
     private fun requestBusesOnRoute(routeNumber: Int): BusesOnRoute {
-        logger.debug { "Making request" }
-
-        val forwardBuses = requestBusLocations(routeNumber, Direction.Forward).locations.map {
-            BusOnRoute(it, Direction.Forward)
-        }
-        val backwardBuses = requestBusLocations(routeNumber, Direction.Backward).locations.map {
-            BusOnRoute(it, Direction.Backward)
-        }
-
-        return BusesOnRoute(forwardBuses + backwardBuses)
+        return BusesOnRoute(
+            requestBusLocations(routeNumber, Direction.Forward),
+            requestBusLocations(routeNumber, Direction.Backward)
+        )
     }
 
     private fun requestBusLocations(routeNumber: Int, direction: Direction): BusLocations {

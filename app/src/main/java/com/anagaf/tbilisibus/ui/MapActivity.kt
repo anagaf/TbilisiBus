@@ -11,7 +11,6 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.anagaf.tbilisibus.R
-import com.anagaf.tbilisibus.data.Direction
 import com.anagaf.tbilisibus.databinding.ActivityMapBinding
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -90,23 +89,25 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         if (isLocationPermissionGranted()) {
             enableMyLocationMapControls()
 
-            mapViewModel.busLocations.observe(this) { busLocations ->
+            mapViewModel.busMarkers.observe(this) { markerDescriptions ->
                 markers.forEach {
                     it.remove()
                 }
                 markers.clear()
 
                 // Add markers for each location
-                busLocations.forEach { location ->
-                    val markerColor =
-                        if (location.direction == Direction.Forward) BitmapDescriptorFactory.HUE_RED else
-                            BitmapDescriptorFactory.HUE_BLUE;
+                markerDescriptions.forEach { markerDescription ->
                     val markerOptions = MarkerOptions()
-                        .position(LatLng(location.location.lat, location.location.lon))
+                        .position(
+                            LatLng(
+                                markerDescription.location.lat,
+                                markerDescription.location.lon
+                            )
+                        )
                         .title("Bus #306")
                         .icon(
                             BitmapDescriptorFactory
-                                .defaultMarker(markerColor)
+                                .defaultMarker(markerDescription.hsv_color)
                         )
                     val marker = mMap.addMarker(markerOptions)
                     if (marker != null) {
