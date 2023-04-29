@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -12,7 +13,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import com.anagaf.tbilisibus.R
 import com.anagaf.tbilisibus.data.Direction
-import com.anagaf.tbilisibus.databinding.ActivityMapsBinding
+import com.anagaf.tbilisibus.databinding.ActivityMapBinding
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
@@ -26,7 +27,7 @@ import dagger.hilt.android.AndroidEntryPoint
 class MapActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var mMap: GoogleMap
-    private lateinit var binding: ActivityMapsBinding
+    private lateinit var binding: ActivityMapBinding
 
     private val mapViewModel: MapViewModel by viewModels()
 
@@ -46,7 +47,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        binding = ActivityMapsBinding.inflate(layoutInflater)
+        binding = ActivityMapBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
@@ -54,9 +55,13 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-        mapViewModel.errorMessage.observe(this, Observer<String>() {
+        mapViewModel.errorMessage.observe(this) {
             Toast.makeText(this, it, Toast.LENGTH_SHORT).show();
-        })
+        }
+
+        mapViewModel.inProgress.observe(this) {
+            binding.inProgress.visibility = if (it) View.VISIBLE else View.INVISIBLE
+        }
     }
 
     override fun onStart() {
