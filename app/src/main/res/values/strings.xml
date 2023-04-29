@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">TbilisiBus</string>
     <string name="title_activity_maps">MapsActivity</string>
+    <string name="bus_locations_are_not_available">Bus locations are not available</string>
 </resources>

@@ -4,10 +4,12 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Observer
 import com.anagaf.tbilisibus.R
 import com.anagaf.tbilisibus.data.Direction
 import com.anagaf.tbilisibus.databinding.ActivityMapsBinding
@@ -51,6 +53,10 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
+
+        mapViewModel.errorMessage.observe(this, Observer<String>() {
+            Toast.makeText(this, it, Toast.LENGTH_SHORT).show();
+        })
     }
 
     override fun onStart() {
