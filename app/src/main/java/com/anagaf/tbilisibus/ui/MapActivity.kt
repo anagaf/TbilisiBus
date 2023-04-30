@@ -93,7 +93,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         if (isLocationPermissionGranted()) {
             enableMyLocationMapControls()
 
-            mapViewModel.busMarkers.observe(this) { markerDescriptions ->
+            mapViewModel.markers.observe(this) { markerDescriptions ->
                 markers.forEach {
                     it.remove()
                 }
@@ -101,27 +101,50 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
 
                 // Add markers for each location
                 markerDescriptions.forEach { markerDescription ->
-                    val markerOptions = MarkerOptions()
-                        .position(
-                            LatLng(
-                                markerDescription.location.lat,
-                                markerDescription.location.lon
-                            )
-                        )
-                        .title("Bus #306")
-                    val iconResId =
-                        if (markerDescription.direction == Direction.Forward) R.drawable.red_arrow else R.drawable.blue_arrow
-                    markerOptions.icon(makeMarkerDrawable(iconResId))
-                    if (markerDescription.heading != null) {
-                        markerOptions.rotation(markerDescription.heading)
+                    val marker = when (markerDescription.type) {
+                        MarkerType.Bus -> addBusMarker(markerDescription)
+                        MarkerType.Stop -> addStopMarker(markerDescription)
                     }
-                    val marker = mMap.addMarker(markerOptions)
                     if (marker != null) {
                         markers.add(marker)
                     }
                 }
             }
         }
+    }
+
+    private fun addBusMarker(markerDescription: MarkerDescription): Marker? {
+        val markerOptions = MarkerOptions()
+            .position(
+                LatLng(
+                    markerDescription.location.lat,
+                    markerDescription.location.lon
+                )
+            )
+            .title("Bus #306")
+        val iconResId =
+            if (markerDescription.direction == Direction.Forward) R.drawable.red_arrow else R.drawable.blue_arrow
+        markerOptions.icon(makeMarkerDrawable(iconResId))
+        if (markerDescription.heading != null) {
+            markerOptions.rotation(markerDescription.heading)
+        }
+        return mMap.addMarker(markerOptions)
+
+    }
+
+    private fun addStopMarker(markerDescription: MarkerDescription): Marker? {
+        val markerOptions = MarkerOptions()
+            .position(
+                LatLng(
+                    markerDescription.location.lat,
+                    markerDescription.location.lon
+                )
+            )
+        val iconResId =
+            if (markerDescription.direction == Direction.Forward) R.drawable.red_stop else R.drawable.blue_stop
+        markerOptions.icon(makeMarkerDrawable(iconResId))
+        return mMap.addMarker(markerOptions)
+
     }
 
     private fun isLocationPermissionGranted() =

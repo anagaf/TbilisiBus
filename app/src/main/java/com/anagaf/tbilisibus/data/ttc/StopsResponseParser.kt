@@ -28,9 +28,10 @@ class StopsResponseParser : JsonDeserializer<Stops>() {
     }
 
     private fun parseStop(node: JsonNode): Stop {
+        val id = node["StopId"].asInt()
         val lat = node["Lat"].asDouble()
         val lon = node["Lon"].asDouble()
         val direction = if (node["Forward"].asBoolean()) Direction.Forward else Direction.Backward
-        return Stop(Location(lat, lon), direction)
+        return Stop(id, Location(lat, lon), direction)
     }
 }

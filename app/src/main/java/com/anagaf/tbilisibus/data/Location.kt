@@ -18,7 +18,7 @@ data class Location(val lat: Double, val lon: Double) {
     /**
      * Returns an angle in degrees between this location and the other one.
      */
-    fun getDirection(other: Location): Float {
+    fun getHeading(other: Location): Float {
         val φ1 = Math.toRadians(lat)
         val φ2 = Math.toRadians(other.lat)
         val Δλ = Math.toRadians(other.lon - lon)

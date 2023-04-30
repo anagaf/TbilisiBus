@@ -31,6 +31,7 @@ class BusesResponseParser : JsonDeserializer<Buses>() {
         val lat = node["lat"].asDouble()
         val lon = node["lon"].asDouble()
         val direction = if (node["forward"].asBoolean()) Direction.Forward else Direction.Backward
-        return Bus(Location(lat, lon), direction)
+        val nextStopId = node["nextStopId"].asInt()
+        return Bus(Location(lat, lon), direction, nextStopId)
     }
 }

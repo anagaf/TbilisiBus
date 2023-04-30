@@ -3,6 +3,7 @@ package com.anagaf.tbilisibus.data.ttc
 import com.anagaf.tbilisibus.data.Buses
 import com.anagaf.tbilisibus.data.DataProvider
 import com.anagaf.tbilisibus.data.Direction
+import com.anagaf.tbilisibus.data.Stop
 import com.anagaf.tbilisibus.data.Stops
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
@@ -74,7 +75,8 @@ class TtcDataProvider @Inject constructor() : DataProvider {
         if (!response.isSuccessful) {
             throw java.lang.Exception("Stops request request failed with code ${response.code()}")
         }
-        return response.body()!!
+        val stops = response.body()!!
+        return Stops(stops.items.map { Stop(it.id, it.location, direction) })
     }
 
     private fun getForwardDirectionCode(direction: Direction): Int {
