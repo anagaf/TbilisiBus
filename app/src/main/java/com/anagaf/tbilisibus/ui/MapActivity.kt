@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat
 import com.anagaf.tbilisibus.R
 import com.anagaf.tbilisibus.data.Direction
 import com.anagaf.tbilisibus.databinding.ActivityMapBinding
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
@@ -87,6 +88,19 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
      */
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
+
+        mapViewModel.initialCameraPos.observe(this) {
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(it.latLng, it.zoom))
+        }
+
+        mMap.setOnCameraMoveListener {
+            val target = mMap.cameraPosition.target
+            mapViewModel.onCameraMove(
+                MapCameraPosition(
+                    LatLng(target.latitude, target.longitude), mMap.cameraPosition.zoom
+                )
+            )
+        }
 
         mMap.uiSettings.isZoomControlsEnabled = true
 
