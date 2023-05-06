@@ -1,12 +1,12 @@
 package com.anagaf.tbilisibus.ui
 
 import android.Manifest
-import android.R.attr.maxLength
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.location.Location
 import android.os.Bundle
 import android.text.InputFilter
 import android.text.InputFilter.LengthFilter
@@ -23,6 +23,7 @@ import androidx.core.content.ContextCompat
 import com.anagaf.tbilisibus.R
 import com.anagaf.tbilisibus.data.Direction
 import com.anagaf.tbilisibus.databinding.ActivityMapBinding
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -38,7 +39,7 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MapActivity : AppCompatActivity(), OnMapReadyCallback {
 
-    private lateinit var mMap: GoogleMap
+    private lateinit var map: GoogleMap
     private lateinit var binding: ActivityMapBinding
 
     private val mapViewModel: MapViewModel by viewModels()
@@ -50,7 +51,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
             ActivityResultContracts.RequestPermission()
         ) { isGranted: Boolean ->
             if (isGranted) {
-                enableMyLocationMapControls()
+                binding.myLocation.isEnabled = true
             } else {
                 // TODO: dialog
             }
@@ -61,8 +62,6 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
 
         binding = ActivityMapBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
 
         getMapFragment().getMapAsync(this)
 
@@ -76,6 +75,19 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
 
         binding.bus.setOnClickListener {
             showBusNumberDialog()
+        }
+
+        binding.myLocation.isEnabled = isLocationPermissionGranted()
+        binding.myLocation.setOnClickListener {
+            moveCameraToMyPosition()
+        }
+
+        binding.zoomIn.setOnClickListener {
+            map.animateCamera(CameraUpdateFactory.zoomIn())
+        }
+
+        binding.zoomOut.setOnClickListener {
+            map.animateCamera(CameraUpdateFactory.zoomOut())
         }
     }
 
@@ -92,53 +104,42 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
     override fun onMapReady(googleMap: GoogleMap) {
-        mMap = googleMap
+        map = googleMap
 
         mapViewModel.initialCameraPos.observe(this) {
-            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(it.latLng, it.zoom))
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(it.latLng, it.zoom))
         }
 
-        mMap.setOnCameraMoveListener {
-            val target = mMap.cameraPosition.target
+        map.setOnCameraMoveListener {
+            val target = map.cameraPosition.target
             mapViewModel.onCameraMove(
                 MapCameraPosition(
-                    LatLng(target.latitude, target.longitude), mMap.cameraPosition.zoom
+                    LatLng(target.latitude, target.longitude), map.cameraPosition.zoom
                 )
             )
         }
 
-        mMap.uiSettings.isZoomControlsEnabled = true
+        mapViewModel.markers.observe(this) { markerDescriptions ->
+            markers.forEach {
+                it.remove()
+            }
+            markers.clear()
 
-        if (isLocationPermissionGranted()) {
-            enableMyLocationMapControls()
-
-            mapViewModel.markers.observe(this) { markerDescriptions ->
-                markers.forEach {
-                    it.remove()
+            // Add markers for each location
+            markerDescriptions.forEach { markerDescription ->
+                val marker = when (markerDescription.type) {
+                    MarkerType.Bus -> addBusMarker(markerDescription)
+                    MarkerType.Stop -> addStopMarker(markerDescription)
                 }
-                markers.clear()
-
-                // Add markers for each location
-                markerDescriptions.forEach { markerDescription ->
-                    val marker = when (markerDescription.type) {
-                        MarkerType.Bus -> addBusMarker(markerDescription)
-                        MarkerType.Stop -> addStopMarker(markerDescription)
-                    }
-                    if (marker != null) {
-                        markers.add(marker)
-                    }
+                if (marker != null) {
+                    markers.add(marker)
                 }
             }
+        }
+
+        if (isLocationPermissionGranted()) {
+            binding.myLocation.isEnabled = true
         }
     }
 
@@ -157,7 +158,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         if (markerDescription.heading != null) {
             markerOptions.rotation(markerDescription.heading)
         }
-        return mMap.addMarker(markerOptions)
+        return map.addMarker(markerOptions)
 
     }
 
@@ -172,19 +173,13 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         val iconResId =
             if (markerDescription.direction == Direction.Forward) R.drawable.red_stop else R.drawable.blue_stop
         markerOptions.icon(makeMarkerDrawable(iconResId))
-        return mMap.addMarker(markerOptions)
+        return map.addMarker(markerOptions)
 
     }
 
     private fun isLocationPermissionGranted() =
         (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED)
-
-    @SuppressLint("MissingPermission")
-    private fun enableMyLocationMapControls() {
-        mMap.isMyLocationEnabled = true
-        mMap.uiSettings.isMyLocationButtonEnabled = true
-    }
 
     private fun makeMarkerDrawable(resId: Int): BitmapDescriptor {
         val vectorDrawable = ContextCompat.getDrawable(this, resId)
@@ -242,5 +237,23 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         dialog.show()
 
         numberEdit.requestFocus()
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun moveCameraToMyPosition() {
+        val locationClient = LocationServices.getFusedLocationProviderClient(this)
+        locationClient.lastLocation
+            .addOnSuccessListener { location: Location? ->
+                if (location != null) {
+                    map.animateCamera(
+                        CameraUpdateFactory.newLatLng(
+                            LatLng(
+                                location.latitude,
+                                location.longitude
+                            )
+                        )
+                    )
+                }
+            }
     }
 }
