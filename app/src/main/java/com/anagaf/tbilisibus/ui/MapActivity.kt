@@ -1,12 +1,20 @@
 package com.anagaf.tbilisibus.ui
 
 import android.Manifest
+import android.R.attr.maxLength
 import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Bundle
+import android.text.InputFilter
+import android.text.InputFilter.LengthFilter
+import android.text.InputType
 import android.view.View
+import android.view.WindowManager
+import android.view.inputmethod.EditorInfo
+import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -25,6 +33,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import dagger.hilt.android.AndroidEntryPoint
+
 
 @AndroidEntryPoint
 class MapActivity : AppCompatActivity(), OnMapReadyCallback {
@@ -54,9 +63,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         setContentView(binding.root)
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        val mapFragment = supportFragmentManager
-            .findFragmentById(R.id.map) as SupportMapFragment
-        mapFragment.getMapAsync(this)
+
+        getMapFragment().getMapAsync(this)
 
         mapViewModel.errorMessage.observe(this) {
             Toast.makeText(this, it, Toast.LENGTH_SHORT).show();
@@ -65,7 +73,14 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         mapViewModel.inProgress.observe(this) {
             binding.inProgress.visibility = if (it) View.VISIBLE else View.INVISIBLE
         }
+
+        binding.bus.setOnClickListener {
+            showBusNumberDialog()
+        }
     }
+
+    private fun getMapFragment(): SupportMapFragment = supportFragmentManager
+        .findFragmentById(R.id.map) as SupportMapFragment
 
     override fun onStart() {
         super.onStart()
@@ -186,5 +201,46 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         )
         vectorDrawable.draw(Canvas(bitmap))
         return BitmapDescriptorFactory.fromBitmap(bitmap)
+    }
+
+    private fun showBusNumberDialog() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Bus Number")
+
+        val numberEdit = EditText(this)
+        numberEdit.inputType = InputType.TYPE_CLASS_NUMBER
+        numberEdit.filters = arrayOf<InputFilter>(LengthFilter(3))
+        builder.setView(numberEdit)
+
+        builder.setPositiveButton(
+            R.string.ok
+        ) { _, _ ->
+            val number = numberEdit.text.toString()
+            if (number.isNotEmpty()) {
+                mapViewModel.onBusNumberEntered(Integer.parseInt(number))
+            }
+        }
+
+        builder.setNegativeButton(R.string.cancel) { dialog, _ ->
+            dialog.cancel()
+        }
+
+        val dialog = builder.create()
+
+        numberEdit.setOnEditorActionListener { _, actionId, _ ->
+            Boolean
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick()
+                true
+            } else {
+                false
+            }
+        }
+
+        dialog.window?.clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)
+        dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+        dialog.show()
+
+        numberEdit.requestFocus()
     }
 }

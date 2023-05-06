@@ -32,29 +32,10 @@ class MapViewModel @Inject constructor(
 
     fun start() {
         viewModelScope.launch {
+            inProgress.value = false
             if (preferences.lastMapPosition != null) {
                 initialCameraPos.value = preferences.lastMapPosition!!
             }
-
-            inProgress.value = true
-
-            try {
-                val routeNumber = 306
-                val buses = dataProvider.getBusesOnRoute(routeNumber)
-                val stops = dataProvider.getStops(routeNumber)
-                val busMarkers = buses.items.map {
-                    makeBusMarker(routeNumber, it, stops)
-                }
-                val stopMarkers = stops.items.map {
-                    makeStopMarker(it)
-                }
-                markers.value = busMarkers + stopMarkers
-            } catch (ex: Exception) {
-                Log.e("MapViewModel", "Cannot retrieve bus locations: ${ex.message}")
-                errorMessage.value = makeString(R.string.bus_locations_are_not_available)
-            }
-
-            inProgress.value = false
         }
     }
 
@@ -93,4 +74,27 @@ class MapViewModel @Inject constructor(
 
     private fun makeString(@StringRes resId: Int): String =
         getApplication<Application>().getString(resId)
+
+    fun onBusNumberEntered(routeNumber: Int) {
+        viewModelScope.launch {
+            inProgress.value = true
+
+            try {
+                val buses = dataProvider.getBusesOnRoute(routeNumber)
+                val stops = dataProvider.getStops(routeNumber)
+                val busMarkers = buses.items.map {
+                    makeBusMarker(routeNumber, it, stops)
+                }
+                val stopMarkers = stops.items.map {
+                    makeStopMarker(it)
+                }
+                markers.value = busMarkers + stopMarkers
+            } catch (ex: Exception) {
+                Log.e("MapViewModel", "Cannot retrieve bus locations: ${ex.message}")
+                errorMessage.value = makeString(R.string.bus_locations_are_not_available)
+            }
+
+            inProgress.value = false
+        }
+    }
 }
