@@ -46,11 +46,13 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private val markers = mutableListOf<Marker>()
 
+    @SuppressLint("MissingPermission")
     private val requestPermissionLauncher =
         registerForActivityResult(
             ActivityResultContracts.RequestPermission()
         ) { isGranted: Boolean ->
             if (isGranted) {
+                map.isMyLocationEnabled = true
                 binding.myLocation.isEnabled = true
             } else {
                 // TODO: dialog
@@ -104,8 +106,13 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
+    @SuppressLint("MissingPermission")
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
+
+        map.isMyLocationEnabled = isLocationPermissionGranted()
+
+        map.uiSettings.isMyLocationButtonEnabled = false
 
         mapViewModel.initialCameraPos.observe(this) {
             map.animateCamera(CameraUpdateFactory.newLatLngZoom(it.latLng, it.zoom))
