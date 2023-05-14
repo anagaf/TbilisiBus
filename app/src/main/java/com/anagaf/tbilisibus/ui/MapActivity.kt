@@ -31,6 +31,7 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import dagger.hilt.android.AndroidEntryPoint
@@ -127,26 +128,39 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
             )
         }
 
-        mapViewModel.markers.observe(this) { markerDescriptions ->
-            markers.forEach {
-                it.remove()
-            }
-            markers.clear()
-
-            // Add markers for each location
-            markerDescriptions.forEach { markerDescription ->
-                val marker = when (markerDescription.type) {
-                    MarkerType.Bus -> addBusMarker(markerDescription)
-                    MarkerType.Stop -> addStopMarker(markerDescription)
-                }
-                if (marker != null) {
-                    markers.add(marker)
-                }
-            }
+        mapViewModel.markers.observe(this) {
+            onMarkersReady(it)
         }
 
         if (isLocationPermissionGranted()) {
             binding.myLocation.isEnabled = true
+        }
+    }
+
+    private fun onMarkersReady(newMarkers: List<MarkerDescription>) {
+        markers.forEach {
+            it.remove()
+        }
+        markers.clear()
+
+        // Add markers for each location
+        newMarkers.forEach { markerDescription ->
+            val marker = when (markerDescription.type) {
+                MarkerType.Bus -> addBusMarker(markerDescription)
+                MarkerType.Stop -> addStopMarker(markerDescription)
+            }
+            if (marker != null) {
+                markers.add(marker)
+            }
+        }
+
+        if (markers.isNotEmpty()) {
+            val markerBounds = LatLngBounds.builder().apply {
+                markers.forEach {
+                    include(it.position)
+                }
+            }.build()
+            map.animateCamera(CameraUpdateFactory.newLatLngBounds(markerBounds, 100));
         }
     }
 
