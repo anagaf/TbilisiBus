@@ -69,7 +69,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         getMapFragment().getMapAsync(this)
 
         mapViewModel.errorMessage.observe(this) {
-            Toast.makeText(this, it, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
         }
 
         mapViewModel.inProgress.observe(this) {
@@ -78,6 +78,10 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
 
         binding.bus.setOnClickListener {
             showBusNumberDialog()
+        }
+
+        binding.refresh.setOnClickListener {
+            mapViewModel.updateSituation()
         }
 
         binding.myLocation.isEnabled = isLocationPermissionGranted()
@@ -128,8 +132,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
             )
         }
 
-        mapViewModel.markers.observe(this) {
-            onMarkersReady(it)
+        mapViewModel.situationImage.observe(this) {
+            onSituationReady(it)
         }
 
         if (isLocationPermissionGranted()) {
@@ -137,62 +141,75 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    private fun onMarkersReady(newMarkers: List<MarkerDescription>) {
-        markers.forEach {
-            it.remove()
+    private fun onSituationReady(situation: SituationImage?) {
+        clearMarkers()
+        if (situation != null) {
+            placeMarkers(situation)
+            showSituation()
+            // TODO: animate
+            binding.refresh.visibility = View.VISIBLE
         }
-        markers.clear()
+    }
 
-        // Add markers for each location
-        newMarkers.forEach { markerDescription ->
-            val marker = when (markerDescription.type) {
-                MarkerType.Bus -> addBusMarker(markerDescription)
-                MarkerType.Stop -> addStopMarker(markerDescription)
-            }
-            if (marker != null) {
-                markers.add(marker)
-            }
-        }
-
+    private fun showSituation() {
         if (markers.isNotEmpty()) {
             val markerBounds = LatLngBounds.builder().apply {
                 markers.forEach {
                     include(it.position)
                 }
             }.build()
-            map.animateCamera(CameraUpdateFactory.newLatLngBounds(markerBounds, 100));
+            map.animateCamera(CameraUpdateFactory.newLatLngBounds(markerBounds, 100))
         }
     }
 
-    private fun addBusMarker(markerDescription: MarkerDescription): Marker? {
+    private fun placeMarkers(situation: SituationImage) {
+        situation.markers.forEach {
+            val marker = when (it.type) {
+                SituationImage.Marker.Type.Bus -> addBusMarker(it)
+                SituationImage.Marker.Type.Stop -> addStopMarker(it)
+            }
+            if (marker != null) {
+                markers.add(marker)
+            }
+        }
+    }
+
+    private fun clearMarkers() {
+        markers.forEach {
+            it.remove()
+        }
+        markers.clear()
+    }
+
+    private fun addBusMarker(markerModel: SituationImage.Marker): Marker? {
         val markerOptions = MarkerOptions()
             .position(
                 LatLng(
-                    markerDescription.location.lat,
-                    markerDescription.location.lon
+                    markerModel.location.lat,
+                    markerModel.location.lon
                 )
             )
             .title("Bus #306")
         val iconResId =
-            if (markerDescription.direction == Direction.Forward) R.drawable.red_arrow else R.drawable.blue_arrow
+            if (markerModel.direction == Direction.Forward) R.drawable.red_arrow else R.drawable.blue_arrow
         markerOptions.icon(makeMarkerDrawable(iconResId))
-        if (markerDescription.heading != null) {
-            markerOptions.rotation(markerDescription.heading)
+        if (markerModel.heading != null) {
+            markerOptions.rotation(markerModel.heading)
         }
         return map.addMarker(markerOptions)
 
     }
 
-    private fun addStopMarker(markerDescription: MarkerDescription): Marker? {
+    private fun addStopMarker(markerModel: SituationImage.Marker): Marker? {
         val markerOptions = MarkerOptions()
             .position(
                 LatLng(
-                    markerDescription.location.lat,
-                    markerDescription.location.lon
+                    markerModel.location.lat,
+                    markerModel.location.lon
                 )
             )
         val iconResId =
-            if (markerDescription.direction == Direction.Forward) R.drawable.red_stop else R.drawable.blue_stop
+            if (markerModel.direction == Direction.Forward) R.drawable.red_stop else R.drawable.blue_stop
         markerOptions.icon(makeMarkerDrawable(iconResId))
         return map.addMarker(markerOptions)
 
@@ -233,7 +250,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         ) { _, _ ->
             val number = numberEdit.text.toString()
             if (number.isNotEmpty()) {
-                mapViewModel.onBusNumberEntered(Integer.parseInt(number))
+                mapViewModel.updateSituation(Integer.parseInt(number))
             }
         }
 
@@ -254,7 +271,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         }
 
         dialog.window?.clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)
-        dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+        dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
         dialog.show()
 
         numberEdit.requestFocus()

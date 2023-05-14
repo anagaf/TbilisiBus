@@ -1,24 +1,22 @@
 package com.anagaf.tbilisibus.data.ttc
 
 import com.anagaf.tbilisibus.data.Buses
-import com.anagaf.tbilisibus.data.DataProvider
 import com.anagaf.tbilisibus.data.Direction
+import com.anagaf.tbilisibus.data.Situation
+import com.anagaf.tbilisibus.data.SituationProvider
 import com.anagaf.tbilisibus.data.Stop
 import com.anagaf.tbilisibus.data.Stops
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import mu.KotlinLogging
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
 import javax.inject.Inject
 
-private val logger = KotlinLogging.logger {}
-
-class TtcDataProvider @Inject constructor() : DataProvider {
+class TtcSituationProvider @Inject constructor() : SituationProvider {
 
     private val retrofitService: TtcRetrofitService by lazy {
         val objectMapper = ObjectMapper()
@@ -42,14 +40,12 @@ class TtcDataProvider @Inject constructor() : DataProvider {
     }
 
 
-    override suspend fun getBusesOnRoute(routeNumber: Int): Buses =
+    override suspend fun getSituation(routeNumber: Int): Situation =
         withContext(Dispatchers.IO) {
-            requestBusesOnRoute(routeNumber)
+            val buses = requestBusesOnRoute(routeNumber)
+            val stops = requestStops(routeNumber)
+            Situation(routeNumber, buses, stops)
         }
-
-    override suspend fun getStops(routeNumber: Int): Stops = withContext(Dispatchers.IO) {
-        requestStops(routeNumber)
-    }
 
     private fun requestBusesOnRoute(routeNumber: Int): Buses =
         requestBuses(routeNumber, Direction.Forward) +

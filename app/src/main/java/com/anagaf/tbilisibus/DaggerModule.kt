@@ -1,8 +1,8 @@
 package com.anagaf.tbilisibus
 
 import android.app.Application
-import com.anagaf.tbilisibus.data.DataProvider
-import com.anagaf.tbilisibus.data.ttc.TtcDataProvider
+import com.anagaf.tbilisibus.data.SituationProvider
+import com.anagaf.tbilisibus.data.ttc.TtcSituationProvider
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -15,7 +15,7 @@ internal object DaggerModule {
 
     @Provides
     @ViewModelScoped
-    fun provideDataProvider(): DataProvider = TtcDataProvider()
+    fun provideDataProvider(): SituationProvider = TtcSituationProvider()
 
     @Provides
     @ViewModelScoped

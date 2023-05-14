@@ -9,10 +9,9 @@ import androidx.lifecycle.viewModelScope
 import com.anagaf.tbilisibus.Preferences
 import com.anagaf.tbilisibus.R
 import com.anagaf.tbilisibus.data.Bus
-import com.anagaf.tbilisibus.data.DataProvider
+import com.anagaf.tbilisibus.data.SituationProvider
 import com.anagaf.tbilisibus.data.Stop
 import com.anagaf.tbilisibus.data.Stops
-import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -20,7 +19,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MapViewModel @Inject constructor(
     app: Application,
-    private val dataProvider: DataProvider,
+    private val situationProvider: SituationProvider,
     private val preferences: Preferences
 ) : AndroidViewModel(app) {
 
@@ -28,7 +27,7 @@ class MapViewModel @Inject constructor(
     val errorMessage = MutableLiveData<String>()
     val initialCameraPos = MutableLiveData<MapCameraPosition>()
 
-    internal val markers = MutableLiveData<List<MarkerDescription>>(emptyList())
+    internal val situationImage = MutableLiveData<SituationImage?>()
 
     fun start() {
         viewModelScope.launch {
@@ -43,18 +42,18 @@ class MapViewModel @Inject constructor(
         preferences.lastMapPosition = pos
     }
 
-    private fun makeBusMarker(routeNumber: Int, bus: Bus, stops: Stops): MarkerDescription =
-        MarkerDescription(
-            MarkerType.Bus,
+    private fun makeBusMarker(routeNumber: Int, bus: Bus, stops: Stops): SituationImage.Marker =
+        SituationImage.Marker(
+            SituationImage.Marker.Type.Bus,
             bus.location,
             routeNumber.toString(),
             bus.direction,
             calculateBusHeading(bus, stops)
         )
 
-    private fun makeStopMarker(stop: Stop): MarkerDescription =
-        MarkerDescription(
-            MarkerType.Stop,
+    private fun makeStopMarker(stop: Stop): SituationImage.Marker =
+        SituationImage.Marker(
+            SituationImage.Marker.Type.Stop,
             stop.location,
             "",
             stop.direction,
@@ -69,26 +68,28 @@ class MapViewModel @Inject constructor(
             Log.w("MapViewModel", "Next stop with id ${bus.nextStopId} not found")
             return null
         }
-        return bus.location.getHeading(nextStop!!.location)
+        return bus.location.getHeading(nextStop.location)
     }
 
     private fun makeString(@StringRes resId: Int): String =
         getApplication<Application>().getString(resId)
 
-    fun onBusNumberEntered(routeNumber: Int) {
+    fun updateSituation(routeNumber: Int) {
         viewModelScope.launch {
+            situationImage.value = null
             inProgress.value = true
 
             try {
-                val buses = dataProvider.getBusesOnRoute(routeNumber)
-                val stops = dataProvider.getStops(routeNumber)
-                val busMarkers = buses.items.map {
-                    makeBusMarker(routeNumber, it, stops)
+                val situation = situationProvider.getSituation(routeNumber)
+                val busMarkers = situation.buses.items.map {
+                    makeBusMarker(routeNumber, it, situation.stops)
                 }
-                val stopMarkers = stops.items.map {
+                val stopMarkers = situation.stops.items.map {
                     makeStopMarker(it)
                 }
-                markers.value = busMarkers + stopMarkers
+                situationImage.value =
+                    SituationImage(situation.routeNumber, busMarkers + stopMarkers)
+
             } catch (ex: Exception) {
                 Log.e("MapViewModel", "Cannot retrieve bus locations: ${ex.message}")
                 errorMessage.value = makeString(R.string.bus_locations_are_not_available)
@@ -96,5 +97,10 @@ class MapViewModel @Inject constructor(
 
             inProgress.value = false
         }
+    }
+
+    fun updateSituation() {
+        assert(situationImage.value != null)
+        updateSituation(situationImage.value!!.routeNumber)
     }
 }
