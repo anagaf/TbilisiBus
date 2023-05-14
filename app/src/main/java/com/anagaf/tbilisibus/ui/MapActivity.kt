@@ -146,8 +146,17 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         if (situation != null) {
             placeMarkers(situation)
             showSituation()
+
+            binding.routeNumber.visibility = View.VISIBLE
+            binding.routeNumber.text =
+                getString(R.string.title_format).format(situation.routeNumber)
+
             // TODO: animate
             binding.refresh.visibility = View.VISIBLE
+
+        } else {
+            binding.routeNumber.visibility = View.INVISIBLE
+            binding.refresh.visibility = View.GONE
         }
     }
 

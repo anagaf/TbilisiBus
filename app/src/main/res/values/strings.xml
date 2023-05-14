@@ -3,4 +3,6 @@
     <string name="bus_locations_are_not_available">Bus locations are not available</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
+    <string name="title_format">Bus №%d</string>
+
 </resources>
