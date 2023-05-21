@@ -9,9 +9,11 @@ import androidx.lifecycle.viewModelScope
 import com.anagaf.tbilisibus.Preferences
 import com.anagaf.tbilisibus.R
 import com.anagaf.tbilisibus.data.Bus
+import com.anagaf.tbilisibus.data.Location
 import com.anagaf.tbilisibus.data.SituationProvider
 import com.anagaf.tbilisibus.data.Stop
 import com.anagaf.tbilisibus.data.Stops
+import com.google.android.gms.maps.model.LatLngBounds
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -22,10 +24,23 @@ class MapViewModel @Inject constructor(
     private val situationProvider: SituationProvider,
     private val preferences: Preferences
 ) : AndroidViewModel(app) {
-
     val inProgress: MutableLiveData<Boolean> = MutableLiveData()
     val errorMessage = MutableLiveData<String>()
-    val initialCameraPos = MutableLiveData<MapCameraPosition>()
+
+    class CameraParams {
+        private constructor(position: MapCameraPosition?, bounds: LatLngBounds?) {
+            this.position = position
+            this.bounds = bounds
+        }
+
+        constructor(position: MapCameraPosition) : this(position, null)
+        constructor(bounds: LatLngBounds) : this(null, bounds)
+
+        val position: MapCameraPosition?
+        val bounds: LatLngBounds?
+    }
+
+    val cameraParams = MutableLiveData<CameraParams>()
 
     internal val situationImage = MutableLiveData<SituationImage?>()
 
@@ -33,7 +48,7 @@ class MapViewModel @Inject constructor(
         viewModelScope.launch {
             inProgress.value = false
             if (preferences.lastMapPosition != null) {
-                initialCameraPos.value = preferences.lastMapPosition!!
+                cameraParams.value = CameraParams(preferences.lastMapPosition!!)
             }
         }
     }
@@ -103,4 +118,16 @@ class MapViewModel @Inject constructor(
         assert(situationImage.value != null)
         updateSituation(situationImage.value!!.routeNumber)
     }
+
+    fun zoomToShowRoute() {
+        val markerBounds = LatLngBounds.builder().apply {
+            situationImage.value?.markers?.forEach { marker: SituationImage.Marker ->
+                include(marker.location.toLatLng())
+            }
+        }.build()
+        cameraParams.value = CameraParams(markerBounds)
+    }
+
+    private fun Location.toLatLng() = com.google.android.gms.maps.model.LatLng(lat, lon)
+
 }

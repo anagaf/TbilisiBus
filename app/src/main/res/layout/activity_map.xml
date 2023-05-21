@@ -26,7 +26,6 @@
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="6dp"
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -68,6 +67,13 @@
             android:layout_height="wrap_content"
             android:backgroundTint="@color/map_control_background"
             android:src="@drawable/zoom_out" />
+
+        <ImageButton
+            android:id="@+id/zoom_to_show_route"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/map_control_background"
+            android:src="@drawable/zoom_to_show_route" />
 
     </LinearLayout>
 

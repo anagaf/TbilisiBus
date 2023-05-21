@@ -89,12 +89,19 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
             moveCameraToMyPosition()
         }
 
+        binding.zoomIn.isEnabled = false
         binding.zoomIn.setOnClickListener {
             map.animateCamera(CameraUpdateFactory.zoomIn())
         }
 
+        binding.zoomOut.isEnabled = false
         binding.zoomOut.setOnClickListener {
             map.animateCamera(CameraUpdateFactory.zoomOut())
+        }
+
+        binding.zoomToShowRoute.visibility = View.GONE
+        binding.zoomToShowRoute.setOnClickListener {
+            mapViewModel.zoomToShowRoute()
         }
     }
 
@@ -116,11 +123,17 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         map = googleMap
 
         map.isMyLocationEnabled = isLocationPermissionGranted()
+        binding.zoomIn.isEnabled = true
+        binding.zoomOut.isEnabled = true
 
         map.uiSettings.isMyLocationButtonEnabled = false
 
-        mapViewModel.initialCameraPos.observe(this) {
-            map.animateCamera(CameraUpdateFactory.newLatLngZoom(it.latLng, it.zoom))
+        mapViewModel.cameraParams.observe(this) {
+            if (it.position != null) {
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(it.position.latLng, it.position.zoom))
+            } else if(it.bounds != null) {
+                map.animateCamera(CameraUpdateFactory.newLatLngBounds(it.bounds, 100))
+            }
         }
 
         map.setOnCameraMoveListener {
@@ -153,10 +166,12 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
 
             // TODO: animate
             binding.refresh.visibility = View.VISIBLE
+            binding.zoomToShowRoute.visibility = View.VISIBLE
 
         } else {
             binding.routeNumber.visibility = View.INVISIBLE
             binding.refresh.visibility = View.GONE
+            binding.zoomToShowRoute.visibility = View.GONE
         }
     }
 
