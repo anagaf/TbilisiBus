@@ -68,12 +68,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
 
         getMapFragment().getMapAsync(this)
 
-        mapViewModel.errorMessage.observe(this) {
-            Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
-        }
-
-        mapViewModel.inProgress.observe(this) {
-            binding.inProgress.visibility = if (it) View.VISIBLE else View.INVISIBLE
+        mapViewModel.state.observe(this) {
+            onUiStateChange(it)
         }
 
         binding.bus.setOnClickListener {
@@ -105,12 +101,60 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
+    private fun onUiStateChange(uiState: MapUiState) {
+        var route: MapUiState.RouteUiState? = null
+        var inProgress = false
+
+        when (uiState) {
+
+            is MapUiState.InProgress -> {
+                inProgress = true
+            }
+
+            is MapUiState.Error -> {
+                Toast.makeText(this, uiState.message, Toast.LENGTH_SHORT).show()
+            }
+
+            is MapUiState.CameraMoveRequired -> {
+                map.animateCamera(
+                    CameraUpdateFactory.newLatLngZoom(
+                        uiState.cameraPosition.latLng,
+                        uiState.cameraPosition.zoom
+                    )
+                )
+            }
+
+            is MapUiState.CameraShowBoundsRequired -> {
+                map.animateCamera(CameraUpdateFactory.newLatLngBounds(uiState.bounds, 100))
+            }
+
+            is MapUiState.RouteAvailable -> {
+                route = uiState.route
+            }
+        }
+
+        binding.inProgress.visibility =
+            if (inProgress) View.VISIBLE else View.INVISIBLE
+
+        if (route != null) {
+            updateRoute(route)
+        }
+    }
+
+    private fun updateRoute(route: MapUiState.RouteUiState) {
+        binding.routeNumber.visibility = View.VISIBLE
+        binding.refresh.visibility = View.VISIBLE
+        binding.routeNumber.text =
+            getString(R.string.title_format).format(route.routeNumber)
+
+        drawMarkers(route.markers)
+    }
+
     private fun getMapFragment(): SupportMapFragment = supportFragmentManager
         .findFragmentById(R.id.map) as SupportMapFragment
 
     override fun onStart() {
         super.onStart()
-        mapViewModel.start()
         if (!isLocationPermissionGranted()) {
             requestPermissionLauncher.launch(
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -128,69 +172,36 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
 
         map.uiSettings.isMyLocationButtonEnabled = false
 
-        mapViewModel.cameraParams.observe(this) {
-            if (it.position != null) {
-                map.animateCamera(CameraUpdateFactory.newLatLngZoom(it.position.latLng, it.position.zoom))
-            } else if(it.bounds != null) {
-                map.animateCamera(CameraUpdateFactory.newLatLngBounds(it.bounds, 100))
-            }
-        }
-
         map.setOnCameraMoveListener {
             val target = map.cameraPosition.target
             mapViewModel.onCameraMove(
-                MapCameraPosition(
+                CameraPosition(
                     LatLng(target.latitude, target.longitude), map.cameraPosition.zoom
                 )
             )
         }
 
-        mapViewModel.situationImage.observe(this) {
-            onSituationReady(it)
-        }
-
         if (isLocationPermissionGranted()) {
             binding.myLocation.isEnabled = true
         }
+
+        mapViewModel.onMapReady()
     }
 
-    private fun onSituationReady(situation: SituationImage?) {
+    private fun drawMarkers(markers: List<MapUiState.Marker>) {
         clearMarkers()
-        if (situation != null) {
-            placeMarkers(situation)
-            showSituation()
+        placeMarkers(markers)
 
-            binding.routeNumber.visibility = View.VISIBLE
-            binding.routeNumber.text =
-                getString(R.string.title_format).format(situation.routeNumber)
-
-            // TODO: animate
-            binding.refresh.visibility = View.VISIBLE
-            binding.zoomToShowRoute.visibility = View.VISIBLE
-
-        } else {
-            binding.routeNumber.visibility = View.INVISIBLE
-            binding.refresh.visibility = View.GONE
-            binding.zoomToShowRoute.visibility = View.GONE
-        }
+        // TODO: animate
+        binding.refresh.visibility = View.VISIBLE
+        binding.zoomToShowRoute.visibility = View.VISIBLE
     }
 
-    private fun showSituation() {
-        if (markers.isNotEmpty()) {
-            val markerBounds = LatLngBounds.builder().apply {
-                markers.forEach {
-                    include(it.position)
-                }
-            }.build()
-            map.animateCamera(CameraUpdateFactory.newLatLngBounds(markerBounds, 100))
-        }
-    }
-
-    private fun placeMarkers(situation: SituationImage) {
-        situation.markers.forEach {
+    private fun placeMarkers(uiStateMarkers: List<MapUiState.Marker>) {
+        uiStateMarkers.forEach {
             val marker = when (it.type) {
-                SituationImage.Marker.Type.Bus -> addBusMarker(it)
-                SituationImage.Marker.Type.Stop -> addStopMarker(it)
+                MapUiState.Marker.Type.Bus -> addBusMarker(it)
+                MapUiState.Marker.Type.Stop -> addStopMarker(it)
             }
             if (marker != null) {
                 markers.add(marker)
@@ -205,35 +216,35 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         markers.clear()
     }
 
-    private fun addBusMarker(markerModel: SituationImage.Marker): Marker? {
+    private fun addBusMarker(uiStateMarker: MapUiState.Marker): Marker? {
         val markerOptions = MarkerOptions()
             .position(
                 LatLng(
-                    markerModel.location.lat,
-                    markerModel.location.lon
+                    uiStateMarker.location.lat,
+                    uiStateMarker.location.lon
                 )
             )
             .title("Bus #306")
         val iconResId =
-            if (markerModel.direction == Direction.Forward) R.drawable.red_arrow else R.drawable.blue_arrow
+            if (uiStateMarker.direction == Direction.Forward) R.drawable.red_arrow else R.drawable.blue_arrow
         markerOptions.icon(makeMarkerDrawable(iconResId))
-        if (markerModel.heading != null) {
-            markerOptions.rotation(markerModel.heading)
+        if (uiStateMarker.heading != null) {
+            markerOptions.rotation(uiStateMarker.heading)
         }
         return map.addMarker(markerOptions)
 
     }
 
-    private fun addStopMarker(markerModel: SituationImage.Marker): Marker? {
+    private fun addStopMarker(uiStateMarker: MapUiState.Marker): Marker? {
         val markerOptions = MarkerOptions()
             .position(
                 LatLng(
-                    markerModel.location.lat,
-                    markerModel.location.lon
+                    uiStateMarker.location.lat,
+                    uiStateMarker.location.lon
                 )
             )
         val iconResId =
-            if (markerModel.direction == Direction.Forward) R.drawable.red_stop else R.drawable.blue_stop
+            if (uiStateMarker.direction == Direction.Forward) R.drawable.red_stop else R.drawable.blue_stop
         markerOptions.icon(makeMarkerDrawable(iconResId))
         return map.addMarker(markerOptions)
 

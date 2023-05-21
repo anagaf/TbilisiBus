@@ -24,51 +24,34 @@ class MapViewModel @Inject constructor(
     private val situationProvider: SituationProvider,
     private val preferences: Preferences
 ) : AndroidViewModel(app) {
-    val inProgress: MutableLiveData<Boolean> = MutableLiveData()
-    val errorMessage = MutableLiveData<String>()
+    val state = MutableLiveData<MapUiState>()
 
-    class CameraParams {
-        private constructor(position: MapCameraPosition?, bounds: LatLngBounds?) {
-            this.position = position
-            this.bounds = bounds
-        }
-
-        constructor(position: MapCameraPosition) : this(position, null)
-        constructor(bounds: LatLngBounds) : this(null, bounds)
-
-        val position: MapCameraPosition?
-        val bounds: LatLngBounds?
-    }
-
-    val cameraParams = MutableLiveData<CameraParams>()
-
-    internal val situationImage = MutableLiveData<SituationImage?>()
-
-    fun start() {
+    fun onMapReady() {
         viewModelScope.launch {
-            inProgress.value = false
             if (preferences.lastMapPosition != null) {
-                cameraParams.value = CameraParams(preferences.lastMapPosition!!)
+                state.value = MapUiState.CameraMoveRequired(
+                    preferences.lastMapPosition!!, state.value?.route
+                )
             }
         }
     }
 
-    fun onCameraMove(pos: MapCameraPosition) {
+    fun onCameraMove(pos: CameraPosition) {
         preferences.lastMapPosition = pos
     }
 
-    private fun makeBusMarker(routeNumber: Int, bus: Bus, stops: Stops): SituationImage.Marker =
-        SituationImage.Marker(
-            SituationImage.Marker.Type.Bus,
+    private fun makeBusMarker(routeNumber: Int, bus: Bus, stops: Stops): MapUiState.Marker =
+        MapUiState.Marker(
+            MapUiState.Marker.Type.Bus,
             bus.location,
             routeNumber.toString(),
             bus.direction,
             calculateBusHeading(bus, stops)
         )
 
-    private fun makeStopMarker(stop: Stop): SituationImage.Marker =
-        SituationImage.Marker(
-            SituationImage.Marker.Type.Stop,
+    private fun makeStopMarker(stop: Stop): MapUiState.Marker =
+        MapUiState.Marker(
+            MapUiState.Marker.Type.Stop,
             stop.location,
             "",
             stop.direction,
@@ -91,8 +74,7 @@ class MapViewModel @Inject constructor(
 
     fun updateSituation(routeNumber: Int) {
         viewModelScope.launch {
-            situationImage.value = null
-            inProgress.value = true
+            state.value = MapUiState.InProgress(state.value?.route)
 
             try {
                 val situation = situationProvider.getSituation(routeNumber)
@@ -102,30 +84,37 @@ class MapViewModel @Inject constructor(
                 val stopMarkers = situation.stops.items.map {
                     makeStopMarker(it)
                 }
-                situationImage.value =
-                    SituationImage(situation.routeNumber, busMarkers + stopMarkers)
+
+                state.value = MapUiState.RouteAvailable(
+                    MapUiState.RouteUiState(
+                        routeNumber,
+                        busMarkers + stopMarkers
+                    )
+                )
 
             } catch (ex: Exception) {
                 Log.e("MapViewModel", "Cannot retrieve bus locations: ${ex.message}")
-                errorMessage.value = makeString(R.string.bus_locations_are_not_available)
+                state.value = MapUiState.Error(
+                    makeString(R.string.bus_locations_are_not_available),
+                    state.value?.route
+                )
             }
-
-            inProgress.value = false
         }
     }
 
     fun updateSituation() {
-        assert(situationImage.value != null)
-        updateSituation(situationImage.value!!.routeNumber)
+        assert(state.value?.route != null)
+        updateSituation(state.value!!.route!!.routeNumber)
     }
 
     fun zoomToShowRoute() {
+        assert(state.value?.route != null)
         val markerBounds = LatLngBounds.builder().apply {
-            situationImage.value?.markers?.forEach { marker: SituationImage.Marker ->
+            state.value!!.route!!.markers.forEach { marker: MapUiState.Marker ->
                 include(marker.location.toLatLng())
             }
         }.build()
-        cameraParams.value = CameraParams(markerBounds)
+        state.value = MapUiState.CameraShowBoundsRequired(markerBounds, state.value?.route)
     }
 
     private fun Location.toLatLng() = com.google.android.gms.maps.model.LatLng(lat, lon)
