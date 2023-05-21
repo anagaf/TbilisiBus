@@ -26,6 +26,7 @@
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginEnd="@dimen/map_control_gap"
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -35,14 +36,17 @@
             android:id="@+id/bus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:backgroundTint="@color/map_control_background"
+            android:background="@color/map_control_background"
+            android:padding="@dimen/map_control_padding"
             android:src="@drawable/bus" />
 
         <ImageButton
             android:id="@+id/refresh"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:backgroundTint="@color/map_control_background"
+            android:layout_marginBottom="@dimen/map_control_gap"
+            android:background="@color/map_control_background"
+            android:padding="@dimen/map_control_padding"
             android:src="@drawable/refresh"
             android:visibility="gone" />
 
@@ -50,29 +54,35 @@
             android:id="@+id/my_location"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:backgroundTint="@color/map_control_background"
+            android:layout_marginTop="@dimen/map_control_gap"
+            android:layout_marginBottom="@dimen/map_control_gap"
+            android:background="@color/map_control_background"
             android:enabled="false"
+            android:padding="@dimen/map_control_padding"
             android:src="@drawable/my_location" />
 
         <ImageButton
             android:id="@+id/zoom_in"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:backgroundTint="@color/map_control_background"
+            android:background="@color/map_control_background"
+            android:padding="@dimen/map_control_padding"
             android:src="@drawable/zoom_in" />
 
         <ImageButton
             android:id="@+id/zoom_out"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:backgroundTint="@color/map_control_background"
+            android:background="@color/map_control_background"
+            android:padding="@dimen/map_control_padding"
             android:src="@drawable/zoom_out" />
 
         <ImageButton
             android:id="@+id/zoom_to_show_route"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:backgroundTint="@color/map_control_background"
+            android:background="@color/map_control_background"
+            android:padding="@dimen/map_control_padding"
             android:src="@drawable/zoom_to_show_route" />
 
     </LinearLayout>
