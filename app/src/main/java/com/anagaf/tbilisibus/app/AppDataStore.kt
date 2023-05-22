@@ -1,4 +1,4 @@
-package com.anagaf.tbilisibus
+package com.anagaf.tbilisibus.app
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -6,7 +6,12 @@ import com.anagaf.tbilisibus.ui.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import javax.inject.Inject
 
-class AndroidPreferences @Inject constructor(context: Context) : Preferences {
+interface AppDataStore {
+    var lastMapPosition: CameraPosition?
+    var lastRouteNumberRequestTimeInMillis: Long?
+}
+
+class AppDataStoreImpl @Inject constructor(context: Context) : AppDataStore {
 
     private val prefs: SharedPreferences
 
@@ -14,6 +19,7 @@ class AndroidPreferences @Inject constructor(context: Context) : Preferences {
         const val LatKey = "lat"
         const val LonKey = "lon"
         const val ZoomKey = "zoom"
+        const val LastRouteNumberRequestTimeInMillisKey = "lastRouteNumberRequestTimeInMillis"
     }
 
     init {
@@ -33,11 +39,18 @@ class AndroidPreferences @Inject constructor(context: Context) : Preferences {
             else null
         }
         set(value) {
-            if (value != null) {
-                prefs.edit().putFloat(LatKey, value.latLng.latitude.toFloat())
-                    .putFloat(LonKey, value.latLng.longitude.toFloat())
-                    .putFloat(ZoomKey, value.zoom).apply()
+            assert(value != null)
+            prefs.edit().putFloat(LatKey, value!!.latLng.latitude.toFloat())
+                .putFloat(LonKey, value.latLng.longitude.toFloat())
+                .putFloat(ZoomKey, value.zoom).apply()
+        }
 
-            }
+    override var lastRouteNumberRequestTimeInMillis: Long?
+        get() = if (prefs.contains(LastRouteNumberRequestTimeInMillisKey))
+            prefs.getLong(LastRouteNumberRequestTimeInMillisKey, 0L)
+        else null
+        set(value) {
+            assert(value != null)
+            prefs.edit().putLong(LastRouteNumberRequestTimeInMillisKey, value!!).apply()
         }
 }

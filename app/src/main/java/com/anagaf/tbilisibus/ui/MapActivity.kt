@@ -31,7 +31,6 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import dagger.hilt.android.AndroidEntryPoint
@@ -77,7 +76,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         }
 
         binding.refresh.setOnClickListener {
-            mapViewModel.updateSituation()
+            mapViewModel.reloadCurrentRoute()
         }
 
         binding.myLocation.isEnabled = isLocationPermissionGranted()
@@ -131,6 +130,10 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
             is MapUiState.RouteAvailable -> {
                 route = uiState.route
             }
+
+            is MapUiState.RouteNumberRequired -> {
+                showBusNumberDialog()
+            }
         }
 
         binding.inProgress.visibility =
@@ -159,6 +162,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
             requestPermissionLauncher.launch(
                 Manifest.permission.ACCESS_FINE_LOCATION
             )
+        } else {
+            mapViewModel.onStart()
         }
     }
 
@@ -285,7 +290,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         ) { _, _ ->
             val number = numberEdit.text.toString()
             if (number.isNotEmpty()) {
-                mapViewModel.updateSituation(Integer.parseInt(number))
+                mapViewModel.onRouteNumberChanged(Integer.parseInt(number))
             }
         }
 

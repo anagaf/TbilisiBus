@@ -6,8 +6,9 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.anagaf.tbilisibus.Preferences
+import com.anagaf.tbilisibus.app.AppDataStore
 import com.anagaf.tbilisibus.R
+import com.anagaf.tbilisibus.app.Preferences
 import com.anagaf.tbilisibus.data.Bus
 import com.anagaf.tbilisibus.data.Location
 import com.anagaf.tbilisibus.data.SituationProvider
@@ -22,22 +23,39 @@ import javax.inject.Inject
 class MapViewModel @Inject constructor(
     app: Application,
     private val situationProvider: SituationProvider,
-    private val preferences: Preferences
+    private val dataStore: AppDataStore,
+    private val prefs: Preferences,
+    private val timeProvider: TimeProvider
 ) : AndroidViewModel(app) {
     val state = MutableLiveData<MapUiState>()
 
+    fun onStart() {
+        if (shouldRequestRouteNumber()) {
+            requestRouteNumber()
+        }
+    }
+
     fun onMapReady() {
         viewModelScope.launch {
-            if (preferences.lastMapPosition != null) {
+            if (dataStore.lastMapPosition != null) {
                 state.value = MapUiState.CameraMoveRequired(
-                    preferences.lastMapPosition!!, state.value?.route
+                    dataStore.lastMapPosition!!, state.value?.route
                 )
+            }
+        }
+        if (state.value?.route == null) {
+            requestRouteNumber()
+        } else {
+            if (shouldRequestRouteNumber()) {
+                requestRouteNumber()
+            } else {
+                onRouteNumberChanged(state.value!!.route!!.routeNumber)
             }
         }
     }
 
     fun onCameraMove(pos: CameraPosition) {
-        preferences.lastMapPosition = pos
+        dataStore.lastMapPosition = pos
     }
 
     private fun makeBusMarker(routeNumber: Int, bus: Bus, stops: Stops): MapUiState.Marker =
@@ -72,7 +90,43 @@ class MapViewModel @Inject constructor(
     private fun makeString(@StringRes resId: Int): String =
         getApplication<Application>().getString(resId)
 
-    fun updateSituation(routeNumber: Int) {
+    fun onRouteNumberChanged(routeNumber: Int) {
+        dataStore.lastRouteNumberRequestTimeInMillis = timeProvider.currentTimeMillis
+        reloadRoute(routeNumber)
+    }
+
+    fun reloadCurrentRoute() {
+        assert(state.value?.route != null)
+        reloadRoute(state.value!!.route!!.routeNumber)
+    }
+
+    fun zoomToShowRoute() {
+        assert(state.value?.route != null)
+        val markerBounds = LatLngBounds.builder().apply {
+            state.value!!.route!!.markers.forEach { marker: MapUiState.Marker ->
+                include(marker.location.toLatLng())
+            }
+        }.build()
+        state.value = MapUiState.CameraShowBoundsRequired(markerBounds, state.value?.route)
+    }
+
+    private fun Location.toLatLng() = com.google.android.gms.maps.model.LatLng(lat, lon)
+
+    private fun shouldRequestRouteNumber(): Boolean {
+        if (dataStore.lastRouteNumberRequestTimeInMillis == null) {
+            return true
+        }
+        val millisSinceLastRequest = timeProvider.currentTimeMillis -
+                dataStore.lastRouteNumberRequestTimeInMillis!!
+        return millisSinceLastRequest > prefs.requestRouteNumberAfterMillis
+    }
+
+    private fun requestRouteNumber() {
+        state.value = MapUiState.RouteNumberRequired(state.value?.route)
+    }
+
+    private fun reloadRoute(routeNumber: Int) {
+
         viewModelScope.launch {
             state.value = MapUiState.InProgress(state.value?.route)
 
@@ -101,22 +155,4 @@ class MapViewModel @Inject constructor(
             }
         }
     }
-
-    fun updateSituation() {
-        assert(state.value?.route != null)
-        updateSituation(state.value!!.route!!.routeNumber)
-    }
-
-    fun zoomToShowRoute() {
-        assert(state.value?.route != null)
-        val markerBounds = LatLngBounds.builder().apply {
-            state.value!!.route!!.markers.forEach { marker: MapUiState.Marker ->
-                include(marker.location.toLatLng())
-            }
-        }.build()
-        state.value = MapUiState.CameraShowBoundsRequired(markerBounds, state.value?.route)
-    }
-
-    private fun Location.toLatLng() = com.google.android.gms.maps.model.LatLng(lat, lon)
-
 }

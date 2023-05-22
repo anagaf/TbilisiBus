@@ -30,5 +30,7 @@ sealed class MapUiState(val route: RouteUiState?) {
 
     class CameraShowBoundsRequired(val bounds: LatLngBounds, route: RouteUiState?) : MapUiState(route)
 
+    class RouteNumberRequired(route: RouteUiState?): MapUiState(route)
+
     class RouteAvailable(route: RouteUiState): MapUiState(route)
 }

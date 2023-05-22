@@ -1,8 +1,14 @@
 package com.anagaf.tbilisibus
 
 import android.app.Application
+import com.anagaf.tbilisibus.app.AppDataStore
+import com.anagaf.tbilisibus.app.AppDataStoreImpl
+import com.anagaf.tbilisibus.app.Preferences
+import com.anagaf.tbilisibus.app.PreferencesImpl
 import com.anagaf.tbilisibus.data.SituationProvider
 import com.anagaf.tbilisibus.data.ttc.TtcSituationProvider
+import com.anagaf.tbilisibus.ui.SystemTimeProvider
+import com.anagaf.tbilisibus.ui.TimeProvider
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -19,6 +25,17 @@ internal object DaggerModule {
 
     @Provides
     @ViewModelScoped
-    fun providePreferences(app: Application): Preferences =
-        AndroidPreferences(app.applicationContext)
+    fun provideDataStore(app: Application): AppDataStore =
+        AppDataStoreImpl(app.applicationContext)
+
+    @Provides
+    @ViewModelScoped
+    fun providePreferences(): Preferences =
+        PreferencesImpl()
+
+    @Provides
+    @ViewModelScoped
+    fun timeProvider(): TimeProvider =
+        SystemTimeProvider()
+
 }
