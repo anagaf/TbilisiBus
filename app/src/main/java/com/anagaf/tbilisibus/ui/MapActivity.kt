@@ -162,8 +162,6 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
             requestPermissionLauncher.launch(
                 Manifest.permission.ACCESS_FINE_LOCATION
             )
-        } else {
-            mapViewModel.onStart()
         }
     }
 

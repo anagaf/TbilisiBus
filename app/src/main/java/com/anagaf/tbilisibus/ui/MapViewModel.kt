@@ -29,12 +29,6 @@ class MapViewModel @Inject constructor(
 ) : AndroidViewModel(app) {
     val state = MutableLiveData<MapUiState>()
 
-    fun onStart() {
-        if (shouldRequestRouteNumber()) {
-            requestRouteNumber()
-        }
-    }
-
     fun onMapReady() {
         viewModelScope.launch {
             if (dataStore.lastMapPosition != null) {
