@@ -20,7 +20,7 @@ class BusesResponseParserTest {
             mapper.factory.createParser(stream),
             mapper.deserializationContext
         )
-        val expectedBuses = listOf<Bus>(
+        val expectedBuses = listOf(
             Bus(Location(41.76619056790743, 44.77884267730354), Direction.Forward, 3527),
             Bus(Location(41.74894996470203, 44.777173414131894), Direction.Backward, 903),
         )

@@ -1,0 +1,26 @@
+{
+  "Stops": [
+    {
+      "StopId": "2949",
+      "Name": "კრწანისის საჯარო სკოლა - [2949]",
+      "Forward": true,
+      "Lon": 44.90064024925233,
+      "Lat": 41.61098244835267,
+      "Type": "bus",
+      "HasBoard": false,
+      "Virtual": false,
+      "Routes": []
+    },
+    {
+      "StopId": "4365",
+      "Name": "\"სოფელი კრწანისი, მე-6 ქუჩა\" - [4365]",
+      "Forward": false,
+      "Lon": 44.90467010065914,
+      "Lat": 41.6098081451219,
+      "Type": "bus",
+      "HasBoard": false,
+      "Virtual": false,
+      "Routes": []
+    }
+  ]
+}
