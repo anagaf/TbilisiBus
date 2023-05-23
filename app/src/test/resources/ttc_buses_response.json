@@ -9,7 +9,7 @@
     },
     {
       "routeNumber": "306",
-      "forward": true,
+      "forward": false,
       "lon": 44.777173414131894,
       "lat": 41.74894996470203,
       "nextStopId": "903"
