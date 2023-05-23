@@ -16,29 +16,8 @@ import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
 import javax.inject.Inject
 
-class TtcRouteProvider @Inject constructor() : RouteProvider {
-
-    private val retrofitService: TtcRetrofitService by lazy {
-        val objectMapper = ObjectMapper()
-
-        val objectMapperModule = SimpleModule()
-        objectMapperModule.addDeserializer(Buses::class.java, BusesResponseParser())
-        objectMapperModule.addDeserializer(Stops::class.java, StopsResponseParser())
-        objectMapper.registerModule(objectMapperModule)
-
-        val interceptor = HttpLoggingInterceptor()
-        interceptor.level = HttpLoggingInterceptor.Level.BASIC
-
-        val httpClient = OkHttpClient.Builder().addInterceptor(interceptor).build()
-
-        Retrofit.Builder()
-            .client(httpClient)
-            .addConverterFactory(JacksonConverterFactory.create(objectMapper))
-            .baseUrl("http://transfer.ttc.com.ge:8080")
-            .build()
-            .create(TtcRetrofitService::class.java)
-    }
-
+class TtcRouteProvider @Inject constructor(private val retrofitService: TtcRetrofitService) :
+    RouteProvider {
 
     override suspend fun getRoute(routeNumber: Int): Route =
         withContext(Dispatchers.IO) {
