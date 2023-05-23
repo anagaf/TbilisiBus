@@ -2,8 +2,8 @@ package com.anagaf.tbilisibus.data.ttc
 
 import com.anagaf.tbilisibus.data.Buses
 import com.anagaf.tbilisibus.data.Direction
-import com.anagaf.tbilisibus.data.Situation
-import com.anagaf.tbilisibus.data.SituationProvider
+import com.anagaf.tbilisibus.data.Route
+import com.anagaf.tbilisibus.data.RouteProvider
 import com.anagaf.tbilisibus.data.Stop
 import com.anagaf.tbilisibus.data.Stops
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -16,7 +16,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
 import javax.inject.Inject
 
-class TtcSituationProvider @Inject constructor() : SituationProvider {
+class TtcRouteProvider @Inject constructor() : RouteProvider {
 
     private val retrofitService: TtcRetrofitService by lazy {
         val objectMapper = ObjectMapper()
@@ -40,14 +40,14 @@ class TtcSituationProvider @Inject constructor() : SituationProvider {
     }
 
 
-    override suspend fun getSituation(routeNumber: Int): Situation =
+    override suspend fun getRoute(routeNumber: Int): Route =
         withContext(Dispatchers.IO) {
-            val buses = requestBusesOnRoute(routeNumber)
+            val buses = requestBuses(routeNumber)
             val stops = requestStops(routeNumber)
-            Situation(routeNumber, buses, stops)
+            Route(routeNumber, buses, stops)
         }
 
-    private fun requestBusesOnRoute(routeNumber: Int): Buses =
+    private fun requestBuses(routeNumber: Int): Buses =
         requestBuses(routeNumber, Direction.Forward) +
                 requestBuses(routeNumber, Direction.Backward)
 

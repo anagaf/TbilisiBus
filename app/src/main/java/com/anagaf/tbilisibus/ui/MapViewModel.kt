@@ -11,7 +11,7 @@ import com.anagaf.tbilisibus.R
 import com.anagaf.tbilisibus.app.Preferences
 import com.anagaf.tbilisibus.data.Bus
 import com.anagaf.tbilisibus.data.Location
-import com.anagaf.tbilisibus.data.SituationProvider
+import com.anagaf.tbilisibus.data.RouteProvider
 import com.anagaf.tbilisibus.data.Stop
 import com.anagaf.tbilisibus.data.Stops
 import com.google.android.gms.maps.model.LatLngBounds
@@ -22,7 +22,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MapViewModel @Inject constructor(
     app: Application,
-    private val situationProvider: SituationProvider,
+    private val routeProvider: RouteProvider,
     private val dataStore: AppDataStore,
     private val prefs: Preferences,
     private val timeProvider: TimeProvider
@@ -125,11 +125,11 @@ class MapViewModel @Inject constructor(
             state.value = MapUiState.InProgress(state.value?.route)
 
             try {
-                val situation = situationProvider.getSituation(routeNumber)
-                val busMarkers = situation.buses.items.map {
-                    makeBusMarker(routeNumber, it, situation.stops)
+                val route = routeProvider.getRoute(routeNumber)
+                val busMarkers = route.buses.items.map {
+                    makeBusMarker(routeNumber, it, route.stops)
                 }
-                val stopMarkers = situation.stops.items.map {
+                val stopMarkers = route.stops.items.map {
                     makeStopMarker(it)
                 }
 

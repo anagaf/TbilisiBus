@@ -5,8 +5,8 @@ import com.anagaf.tbilisibus.app.AppDataStore
 import com.anagaf.tbilisibus.app.AppDataStoreImpl
 import com.anagaf.tbilisibus.app.Preferences
 import com.anagaf.tbilisibus.app.PreferencesImpl
-import com.anagaf.tbilisibus.data.SituationProvider
-import com.anagaf.tbilisibus.data.ttc.TtcSituationProvider
+import com.anagaf.tbilisibus.data.RouteProvider
+import com.anagaf.tbilisibus.data.ttc.TtcRouteProvider
 import com.anagaf.tbilisibus.ui.SystemTimeProvider
 import com.anagaf.tbilisibus.ui.TimeProvider
 import dagger.Module
@@ -21,7 +21,7 @@ internal object DaggerModule {
 
     @Provides
     @ViewModelScoped
-    fun provideDataProvider(): SituationProvider = TtcSituationProvider()
+    fun provideDataProvider(): RouteProvider = TtcRouteProvider()
 
     @Provides
     @ViewModelScoped
