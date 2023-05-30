@@ -22,7 +22,6 @@
         <meta-data
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
-
         <!--
              TODO: Before you run your application, you need a Google Maps API key.
 
@@ -42,12 +41,25 @@
             android:name=".ui.MapActivity"
             android:exported="true"
             android:theme="@style/Theme.Design.NoActionBar">
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.MAIN" />-->
+
+<!--                <category android:name="android.intent.category.LAUNCHER" />-->
+<!--            </intent-filter>-->
+        </activity>
+
+        <activity
+            android:name=".ui.ComposeMainActivity"
+            android:exported="true"
+            android:label="@string/title_activity_compose_main"
+            android:theme="@style/Theme.TbilisiBus">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
     </application>
 
 </manifest>
