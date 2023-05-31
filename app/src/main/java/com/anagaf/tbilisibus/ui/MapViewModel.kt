@@ -29,14 +29,14 @@ class MapViewModel @Inject constructor(
     private val timeProvider: TimeProvider
 ) : AndroidViewModel(app) {
 
-    private val _uiState = MutableStateFlow<MapUiState>(value = MapUiState.Initial())
+    private val _uiState = MutableStateFlow<MapUiState>(value = MapUiState.InProgress(null))
     val uiState = _uiState.asStateFlow()
 
     fun onMapReady() {
         viewModelScope.launch {
             if (dataStore.lastMapPosition != null) {
                 _uiState.value = MapUiState.CameraMoveRequired(
-                    dataStore.lastMapPosition!!, _uiState.value
+                    dataStore.lastMapPosition!!, _uiState.value.route
                 )
             }
         }
