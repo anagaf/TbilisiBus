@@ -20,6 +20,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.anagaf.tbilisibus.R
 import com.anagaf.tbilisibus.data.Direction
 import com.anagaf.tbilisibus.databinding.ActivityMapBinding
@@ -34,6 +35,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 
 @AndroidEntryPoint
@@ -67,8 +69,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
 
         getMapFragment().getMapAsync(this)
 
-        mapViewModel.state.observe(this) {
-            onUiStateChange(it)
+        lifecycleScope.launch {
+            mapViewModel.uiState.collect { uiState -> onUiStateChange(uiState) }
         }
 
         binding.bus.setOnClickListener {
@@ -101,7 +103,6 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun onUiStateChange(uiState: MapUiState) {
-        var route: MapUiState.RouteUiState? = null
         var inProgress = false
 
         when (uiState) {
@@ -111,7 +112,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
             }
 
             is MapUiState.Error -> {
-                Toast.makeText(this, uiState.message, Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, uiState.errorMessage, Toast.LENGTH_SHORT).show()
             }
 
             is MapUiState.CameraMoveRequired -> {
@@ -127,20 +128,24 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                 map.animateCamera(CameraUpdateFactory.newLatLngBounds(uiState.bounds, 100))
             }
 
-            is MapUiState.RouteAvailable -> {
-                route = uiState.route
-            }
-
             is MapUiState.RouteNumberRequired -> {
                 showBusNumberDialog()
+            }
+
+            is MapUiState.Idle -> {
+                // do nothing
+            }
+
+            is MapUiState.Initial -> {
+                // do nothing
             }
         }
 
         binding.inProgress.visibility =
             if (inProgress) View.VISIBLE else View.INVISIBLE
 
-        if (route != null) {
-            updateRoute(route)
+        if (uiState.route != null) {
+            updateRoute(uiState.route)
         }
     }
 
@@ -148,7 +153,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         binding.routeNumber.visibility = View.VISIBLE
         binding.refresh.visibility = View.VISIBLE
         binding.routeNumber.text =
-            getString(R.string.title_format).format(route.routeNumber)
+            getString(R.string.title_format).format(route.number)
 
         drawMarkers(route.markers)
     }

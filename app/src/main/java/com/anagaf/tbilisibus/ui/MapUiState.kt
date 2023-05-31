@@ -4,8 +4,9 @@ import com.anagaf.tbilisibus.data.Direction
 import com.anagaf.tbilisibus.data.Location
 import com.google.android.gms.maps.model.LatLngBounds
 
-sealed class MapUiState(val route: RouteUiState?) {
-
+sealed class MapUiState(
+    val route: RouteUiState?
+) {
     data class Marker(
         val type: Type,
         val location: Location,
@@ -20,17 +21,24 @@ sealed class MapUiState(val route: RouteUiState?) {
         }
     }
 
-    data class RouteUiState(val routeNumber: Int, val markers: List<Marker>)
+    data class RouteUiState(val number: Int, val markers: List<Marker>)
 
-    class InProgress(route: RouteUiState?) : MapUiState(route)
+    class Initial : MapUiState(null)
 
-    class Error(val message: String, route: RouteUiState?) : MapUiState(route)
+    class InProgress(uiState: MapUiState) : MapUiState(uiState.route)
 
-    class CameraMoveRequired(val cameraPosition: CameraPosition, route: RouteUiState?) : MapUiState(route)
+    class Error(uiState: MapUiState, val errorMessage: String?) : MapUiState(uiState.route)
 
-    class CameraShowBoundsRequired(val bounds: LatLngBounds, route: RouteUiState?) : MapUiState(route)
+    class CameraMoveRequired(val cameraPosition: CameraPosition, uiState: MapUiState) :
+        MapUiState(uiState.route)
 
-    class RouteNumberRequired(route: RouteUiState?): MapUiState(route)
+    class CameraShowBoundsRequired(
+        val bounds: LatLngBounds,
+        uiState: MapUiState
+    ) : MapUiState(uiState.route)
 
-    class RouteAvailable(route: RouteUiState): MapUiState(route)
+    class RouteNumberRequired(uiState: MapUiState) : MapUiState(uiState.route)
+
+    class Idle(route: RouteUiState) : MapUiState(route)
+
 }
