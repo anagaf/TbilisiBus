@@ -5,5 +5,8 @@
     <string name="cancel">Cancel</string>
     <string name="title_format">Bus №%d</string>
     <string name="title_activity_compose_main">ComposeMainActivity</string>
+    <string name="zoom_in">Zoom In</string>
+    <string name="zoom_out">Zoom Out</string>
+    <string name="my_location">My Location</string>
 
 </resources>
