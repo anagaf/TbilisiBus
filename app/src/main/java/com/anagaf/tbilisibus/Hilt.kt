@@ -12,6 +12,8 @@ import com.anagaf.tbilisibus.data.ttc.BusesResponseParser
 import com.anagaf.tbilisibus.data.ttc.StopsResponseParser
 import com.anagaf.tbilisibus.data.ttc.TtcRetrofitService
 import com.anagaf.tbilisibus.data.ttc.TtcRouteProvider
+import com.anagaf.tbilisibus.ui.LocationProvider
+import com.anagaf.tbilisibus.ui.SystemLocationProvider
 import com.anagaf.tbilisibus.ui.SystemTimeProvider
 import com.anagaf.tbilisibus.ui.TimeProvider
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -72,5 +74,10 @@ internal object ViewModelHiltModule {
     @ViewModelScoped
     fun timeProvider(): TimeProvider =
         SystemTimeProvider()
+
+    @Provides
+    @ViewModelScoped
+    fun locationProvider(app: Application): LocationProvider =
+        SystemLocationProvider(app.applicationContext)
 
 }

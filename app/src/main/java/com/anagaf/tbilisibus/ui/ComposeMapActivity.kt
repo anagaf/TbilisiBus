@@ -1,5 +1,8 @@
 package com.anagaf.tbilisibus.ui
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -9,51 +12,51 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.core.content.ContextCompat
 import com.anagaf.tbilisibus.R
+import com.anagaf.tbilisibus.data.Direction
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.Marker
 import com.google.maps.android.compose.CameraPositionState
-import com.google.maps.android.compose.Circle
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
-import com.google.maps.android.compose.MapType
-import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerInfoWindowContent
+import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
-private const val TAG = "BasicMapActivity"
-
-val singapore = LatLng(1.35, 103.87)
-val singapore2 = LatLng(1.40, 103.77)
-val singapore3 = LatLng(1.45, 103.77)
-val defaultCameraPosition = CameraPosition.fromLatLngZoom(singapore, 11f)
+private const val TAG = "ComposeMapActivity"
 
 @AndroidEntryPoint
 class ComposeMapActivity : ComponentActivity() {
@@ -63,15 +66,42 @@ class ComposeMapActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+            Log.d(TAG, "Recomposition")
+
+            val uiState by viewModel.uiState.collectAsState()
+
             var isMapLoaded by remember { mutableStateOf(false) }
-            // Observing and controlling the camera's state can be done with a CameraPositionState
+
             val cameraPositionState = rememberCameraPositionState {
-                position = defaultCameraPosition
+                position = uiState.cameraPosition
+            }
+
+            LaunchedEffect(uiState.cameraPosition) {
+                cameraPositionState.animate(
+                    CameraUpdateFactory.newCameraPosition(uiState.cameraPosition),
+                    1_000
+                )
+            }
+
+            LaunchedEffect(cameraPositionState.isMoving) {
+                if (!cameraPositionState.isMoving) {
+                    viewModel.onCameraMove(cameraPositionState.position)
+                }
+            }
+
+            LaunchedEffect(uiState.cameraBounds) {
+                if (uiState.cameraBounds != null) {
+                    Log.d(TAG, "Animating camera bounds: ${uiState.cameraBounds}")
+                    cameraPositionState.animate(
+                        CameraUpdateFactory.newLatLngBounds(uiState.cameraBounds!!, 100),
+                        1_000
+                    )
+                }
             }
 
             Box(Modifier.fillMaxSize()) {
                 GoogleMapView(
-                    viewModel = viewModel,
+                    markers = uiState.routeMarkers,
                     modifier = Modifier.matchParentSize(),
                     cameraPositionState = cameraPositionState,
                     onMapLoaded = {
@@ -79,58 +109,166 @@ class ComposeMapActivity : ComponentActivity() {
                     },
                 )
             }
+
+            MapControlButtons(
+                cameraPositionState = cameraPositionState,
+                markersAvailable = uiState.routeMarkers.isNotEmpty(),
+                onChooseRouteButtonClicked = {
+                    viewModel.onChooseRouteButtonClicked()
+                },
+                onMyLocationButtonClicked = {
+                    viewModel.onMyLocationButtonClicked()
+                },
+                onShowRouteButtonClicked = {
+                    viewModel.zoomToShowRoute()
+                },
+            )
+
+            if (uiState.routNumberDialogRequired) {
+                RouteNumberDialog(onConfirmed = { routeNumber ->
+                    viewModel.onRouteNumberChangeConfirmed(routeNumber)
+                }, onDismissed = {
+                    viewModel.onRouteNumberChangeDismissed()
+                })
+            }
+
+            if (uiState.inProgress) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
         }
     }
 }
 
 @Composable
 fun GoogleMapView(
-    viewModel: MapViewModel,
+    markers: List<MapUiState.Marker>,
     modifier: Modifier = Modifier,
-    cameraPositionState: CameraPositionState = rememberCameraPositionState(),
+    cameraPositionState: CameraPositionState,
     onMapLoaded: () -> Unit = {},
     content: @Composable () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-
     GoogleMap(
         modifier = modifier,
         cameraPositionState = cameraPositionState,
         onMapLoaded = onMapLoaded,
-        onPOIClick = {
-            Log.d(TAG, "POI clicked: ${it.name}")
-        }
+        properties = MapProperties(isMyLocationEnabled = true)
     ) {
-        // draw on map
+        Log.d(TAG, "Map recomposition")
+
+        val rememberedMarkers = remember(markers) {
+            markers
+        }
+
+        Markers(markers = rememberedMarkers)
     }
-    MapControlButtons(cameraPositionState = cameraPositionState)
+
 }
 
 @Composable
-private fun MapControlButtons(cameraPositionState: CameraPositionState) {
+fun Markers(markers: List<MapUiState.Marker>) {
+    Log.d(TAG, "Markers recomposition")
+    for (marker in markers) {
+        when (marker.type) {
+            MapUiState.Marker.Type.Bus -> BusMarker(marker)
+            MapUiState.Marker.Type.Stop -> StopMarker(marker)
+        }
+    }
+}
+
+
+@Composable
+private fun BusMarker(marker: MapUiState.Marker) {
+    val iconId = when (marker.direction) {
+        Direction.Forward -> R.drawable.red_arrow
+        Direction.Backward -> R.drawable.blue_arrow
+    }
+    Marker(
+        state = MarkerState(position = marker.location),
+        icon = makeMarkerDrawable(LocalContext.current, iconId)
+    )
+}
+
+@Composable
+fun StopMarker(marker: MapUiState.Marker) {
+    val context = LocalContext.current
+    val forwardIcon = remember(context) {
+        makeMarkerDrawable(context, R.drawable.blue_stop)
+    }
+    val backwardIcon = remember(context) {
+        makeMarkerDrawable(context, R.drawable.blue_stop)
+    }
+    Marker(
+        state = MarkerState(position = marker.location),
+        icon = when (marker.direction) {
+            Direction.Forward -> forwardIcon
+            Direction.Backward -> backwardIcon
+        }
+    )
+}
+
+
+@Composable
+private fun MapControlButtons(
+    cameraPositionState: CameraPositionState,
+    markersAvailable: Boolean,
+    onChooseRouteButtonClicked: () -> Unit = {},
+    onMyLocationButtonClicked: () -> Unit = {},
+    onShowRouteButtonClicked: () -> Unit = {},
+) {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(dimensionResource(R.dimen.map_control_padding)),
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.Center,
     ) {
+        val coroutineScope = rememberCoroutineScope()
         MapControlButton(
             onClick = {
-                cameraPositionState.move(CameraUpdateFactory.zoomIn())
-            }, drawableId = R.drawable.my_location,
-            contentDescriptionId = R.string.zoom_in
+                onChooseRouteButtonClicked()
+            }, drawableId = R.drawable.bus,
+            contentDescriptionId = R.string.choose_route
         )
+        MapControlButtonSpacer()
         MapControlButton(
             onClick = {
-                cameraPositionState.move(CameraUpdateFactory.zoomIn())
+                onMyLocationButtonClicked()
+            },
+            drawableId = R.drawable.my_location,
+            contentDescriptionId = R.string.my_location,
+        )
+        MapControlButtonSpacer()
+        MapControlButton(
+            onClick = {
+                coroutineScope.launch {
+                    cameraPositionState.animate(CameraUpdateFactory.zoomIn())
+                }
             }, drawableId = R.drawable.zoom_in,
             contentDescriptionId = R.string.zoom_in
         )
         MapControlButton(
             onClick = {
-                cameraPositionState.move(CameraUpdateFactory.zoomOut())
+                coroutineScope.launch {
+                    cameraPositionState.animate(CameraUpdateFactory.zoomOut())
+                }
             }, drawableId = R.drawable.zoom_out,
             contentDescriptionId = R.string.zoom_out
         )
+        if (markersAvailable) {
+            MapControlButton(
+                onClick = {
+                    coroutineScope.launch {
+                        onShowRouteButtonClicked()
+                    }
+                }, drawableId = R.drawable.zoom_to_show_route,
+                contentDescriptionId = R.string.show_route
+            )
+        }
     }
 }
 
@@ -141,9 +279,9 @@ private fun MapControlButton(
     IconButton(
         onClick = onClick,
         modifier = Modifier
-            .size(48.dp)
+            .size(dimensionResource(R.dimen.map_control_size))
             .background(colorResource(id = R.color.map_control_background))
-            .padding(8.dp)
+            .padding(dimensionResource(R.dimen.map_control_padding))
     ) {
         Icon(
             painterResource(id = drawableId),
@@ -151,6 +289,77 @@ private fun MapControlButton(
             tint = Color.Unspecified
         )
     }
+}
+
+@Composable
+private fun MapControlButtonSpacer() {
+    Spacer(modifier = Modifier.size(dimensionResource(R.dimen.map_control_gap)))
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RouteNumberDialog(
+    onConfirmed: (number: Int) -> Unit,
+    onDismissed: () -> Unit
+) {
+    var number by remember { mutableStateOf("") }
+
+    AlertDialog(
+        title = {
+            Text(text = stringResource(R.string.choose_route))
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onConfirmed(number.toInt())
+                },
+                enabled = number.isNotEmpty()
+            ) {
+                Text(text = stringResource(R.string.ok))
+            }
+        },
+        dismissButton = {
+            Button(
+                onClick = {
+                    onDismissed()
+                }
+            ) {
+                Text(text = stringResource(R.string.cancel))
+            }
+        },
+        text = {
+            TextField(
+                value = number,
+                onValueChange = {
+                    if (it.isEmpty() || (it.length <= 3 && it.toIntOrNull() != null)) {
+                        number = it
+                    }
+                },
+                label = {},
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        onDismissRequest = {}
+    )
+}
+
+
+private fun makeMarkerDrawable(context: Context, resId: Int): BitmapDescriptor {
+    val vectorDrawable = ContextCompat.getDrawable(context, resId)
+    vectorDrawable!!.setBounds(
+        0,
+        0,
+        vectorDrawable.intrinsicWidth,
+        vectorDrawable.intrinsicHeight
+    )
+    val bitmap = Bitmap.createBitmap(
+        vectorDrawable.intrinsicWidth,
+        vectorDrawable.intrinsicHeight,
+        Bitmap.Config.ARGB_8888
+    )
+    vectorDrawable.draw(Canvas(bitmap))
+    return BitmapDescriptorFactory.fromBitmap(bitmap)
 }
 
 //@Preview

@@ -2,7 +2,7 @@ package com.anagaf.tbilisibus.app
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.anagaf.tbilisibus.ui.CameraPosition
+import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import javax.inject.Inject
 
@@ -35,13 +35,13 @@ class AppDataStoreImpl @Inject constructor(context: Context) : AppDataStore {
             val lon = getFloat(LonKey)
             val zoom = getFloat(ZoomKey)
             return if (lat != null && lon != null && zoom != null)
-                CameraPosition(LatLng(lat.toDouble(), lon.toDouble()), zoom)
+                CameraPosition.fromLatLngZoom(LatLng(lat.toDouble(), lon.toDouble()), zoom)
             else null
         }
         set(value) {
             assert(value != null)
-            prefs.edit().putFloat(LatKey, value!!.latLng.latitude.toFloat())
-                .putFloat(LonKey, value.latLng.longitude.toFloat())
+            prefs.edit().putFloat(LatKey, value!!.target.latitude.toFloat())
+                .putFloat(LonKey, value.target.longitude.toFloat())
                 .putFloat(ZoomKey, value.zoom).apply()
         }
 
