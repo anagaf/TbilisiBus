@@ -42,7 +42,7 @@ class MapViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow<MapUiState>(
         value = MapUiState(
-            inProgress = true,
+            inProgress = false,
             cameraPosition = initialCameraPosition
         )
     )
@@ -206,6 +206,7 @@ class MapViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         inProgress = false,
+                        routeNumber = routeNumber,
                         routeMarkers = busMarkers + stopMarkers,
                     )
                 }

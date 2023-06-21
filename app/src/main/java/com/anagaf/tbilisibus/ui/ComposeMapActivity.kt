@@ -45,6 +45,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.anagaf.tbilisibus.R
 import com.anagaf.tbilisibus.data.Direction
@@ -54,6 +55,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
@@ -74,7 +76,7 @@ class ComposeMapActivity : ComponentActivity() {
 
             val uiState by viewModel.uiState.collectAsState()
 
-            var isMapLoaded by remember { mutableStateOf(false) }
+            var isMapReady by remember { mutableStateOf(false) }
 
             val cameraPositionState = rememberCameraPositionState {
                 position = uiState.cameraPosition
@@ -109,39 +111,57 @@ class ComposeMapActivity : ComponentActivity() {
                     modifier = Modifier.matchParentSize(),
                     cameraPositionState = cameraPositionState,
                     onMapLoaded = {
+                        isMapReady = true
                         viewModel.onMapReady()
                     },
                 )
             }
 
-            MapControlButtons(
-                cameraPositionState = cameraPositionState,
-                markersAvailable = uiState.routeMarkers.isNotEmpty(),
-                onChooseRouteButtonClicked = {
-                    viewModel.onChooseRouteButtonClicked()
-                },
-                onMyLocationButtonClicked = {
-                    viewModel.onMyLocationButtonClicked()
-                },
-                onShowRouteButtonClicked = {
-                    viewModel.zoomToShowRoute()
-                },
-            )
+            if (isMapReady) {
+                MapControlButtons(
+                    cameraPositionState = cameraPositionState,
+                    markersAvailable = uiState.routeMarkers.isNotEmpty(),
+                    onChooseRouteButtonClicked = {
+                        viewModel.onChooseRouteButtonClicked()
+                    },
+                    onMyLocationButtonClicked = {
+                        viewModel.onMyLocationButtonClicked()
+                    },
+                    onShowRouteButtonClicked = {
+                        viewModel.zoomToShowRoute()
+                    },
+                )
 
-            if (uiState.routNumberDialogRequired) {
-                RouteNumberDialog(onConfirmed = { routeNumber ->
-                    viewModel.onRouteNumberChangeConfirmed(routeNumber)
-                }, onDismissed = {
-                    viewModel.onRouteNumberChangeDismissed()
-                })
+                if (uiState.routNumberDialogRequired) {
+                    RouteNumberDialog(onConfirmed = { routeNumber ->
+                        viewModel.onRouteNumberChangeConfirmed(routeNumber)
+                    }, onDismissed = {
+                        viewModel.onRouteNumberChangeDismissed()
+                    })
+                }
             }
 
-            if (uiState.inProgress) {
+            if (!isMapReady || uiState.inProgress) {
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier.fillMaxSize()
                 ) {
                     CircularProgressIndicator()
+                }
+            }
+
+            if (uiState.routeNumber != null) {
+                Box(
+                    contentAlignment = Alignment.TopCenter,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(dimensionResource(R.dimen.default_padding))
+                ) {
+                    Text(
+                        text = getString(R.string.title_format).format(uiState.routeNumber),
+                        fontSize = 24.sp,
+                        color = colorResource(id = R.color.map_control),
+                    )
                 }
             }
         }
@@ -160,7 +180,8 @@ fun GoogleMapView(
         modifier = modifier,
         cameraPositionState = cameraPositionState,
         onMapLoaded = onMapLoaded,
-        properties = MapProperties(isMyLocationEnabled = true)
+        properties = MapProperties(isMyLocationEnabled = true),
+        uiSettings = MapUiSettings(zoomControlsEnabled = false, myLocationButtonEnabled = false),
     ) {
         Log.d(TAG, "Map recomposition")
 
@@ -227,7 +248,7 @@ private fun MapControlButtons(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(dimensionResource(R.dimen.map_control_padding)),
+            .padding(dimensionResource(R.dimen.default_padding)),
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -285,7 +306,7 @@ private fun MapControlButton(
         modifier = Modifier
             .size(dimensionResource(R.dimen.map_control_size))
             .background(colorResource(id = R.color.map_control_background))
-            .padding(dimensionResource(R.dimen.map_control_padding))
+            .padding(dimensionResource(R.dimen.default_padding))
     ) {
         Icon(
             painterResource(id = drawableId),
@@ -342,7 +363,9 @@ private fun RouteNumberDialog(
                     }
                 },
                 label = {},
-                modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             )
         },
