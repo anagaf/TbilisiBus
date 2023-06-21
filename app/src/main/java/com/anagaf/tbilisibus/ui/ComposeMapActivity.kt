@@ -120,7 +120,7 @@ class ComposeMapActivity : ComponentActivity() {
             if (isMapReady) {
                 MapControlButtons(
                     cameraPositionState = cameraPositionState,
-                    markersAvailable = uiState.routeMarkers.isNotEmpty(),
+                    routeAvailable = uiState.routeMarkers.isNotEmpty(),
                     onChooseRouteButtonClicked = {
                         viewModel.onChooseRouteButtonClicked()
                     },
@@ -130,6 +130,9 @@ class ComposeMapActivity : ComponentActivity() {
                     onShowRouteButtonClicked = {
                         viewModel.zoomToShowRoute()
                     },
+                    onReloadRouteButtonClicked = {
+                        viewModel.onReloadRouteButtonClicked()
+                    }
                 )
 
                 if (uiState.routNumberDialogRequired) {
@@ -240,10 +243,11 @@ fun StopMarker(marker: MapUiState.Marker) {
 @Composable
 private fun MapControlButtons(
     cameraPositionState: CameraPositionState,
-    markersAvailable: Boolean,
+    routeAvailable: Boolean,
     onChooseRouteButtonClicked: () -> Unit = {},
     onMyLocationButtonClicked: () -> Unit = {},
     onShowRouteButtonClicked: () -> Unit = {},
+    onReloadRouteButtonClicked: () -> Unit = {},
 ) {
     Column(
         modifier = Modifier
@@ -259,6 +263,14 @@ private fun MapControlButtons(
             }, drawableId = R.drawable.bus,
             contentDescriptionId = R.string.choose_route
         )
+        if (routeAvailable) {
+            MapControlButton(
+                onClick = {
+                    onReloadRouteButtonClicked()
+                }, drawableId = R.drawable.reload,
+                contentDescriptionId = R.string.reload_route
+            )
+        }
         MapControlButtonSpacer()
         MapControlButton(
             onClick = {
@@ -284,7 +296,7 @@ private fun MapControlButtons(
             }, drawableId = R.drawable.zoom_out,
             contentDescriptionId = R.string.zoom_out
         )
-        if (markersAvailable) {
+        if (routeAvailable) {
             MapControlButton(
                 onClick = {
                     coroutineScope.launch {

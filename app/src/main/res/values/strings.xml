@@ -6,6 +6,7 @@
     <string name="title_format">Bus №%d</string>
     <string name="title_activity_compose_main">ComposeMainActivity</string>
     <string name="choose_route">Choose Route</string>
+    <string name="reload_route">Reload Route</string>
     <string name="zoom_in">Zoom In</string>
     <string name="zoom_out">Zoom Out</string>
     <string name="show_route">Show Route</string>

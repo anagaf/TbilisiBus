@@ -151,7 +151,7 @@ class MapViewModel @Inject constructor(
         }
     }
 
-    fun reloadCurrentRoute() {
+    fun onReloadRouteButtonClicked() {
         if (_uiState.value.routeNumber != null) {
             reloadRoute(_uiState.value.routeNumber!!)
         }

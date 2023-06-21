@@ -47,7 +47,7 @@
             android:layout_marginBottom="@dimen/map_control_gap"
             android:background="@color/map_control_background"
             android:padding="@dimen/default_padding"
-            android:src="@drawable/refresh"
+            android:src="@drawable/reload"
             android:visibility="gone" />
 
         <ImageButton
