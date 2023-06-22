@@ -4,6 +4,7 @@ plugins {
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
     id("com.google.dagger.hilt.android")
     id("kotlin-kapt")
+    id("de.mannodermaus.android-junit5") version "1.9.3.0"
 }
 
 android {
@@ -84,7 +85,7 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-jackson:2.9.0")
     implementation("com.squareup.okhttp3:logging-interceptor:3.9.1")
 
-    implementation("io.github.microutils:kotlin-logging-jvm:2.0.11")
+    implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
 
     implementation("com.google.dagger:hilt-android:2.44")
     implementation("com.google.android.gms:play-services-location:21.0.1")
@@ -92,7 +93,14 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     kapt("com.google.dagger:hilt-compiler:2.44")
 
-    testImplementation("junit:junit:4.13.2")
+//    testImplementation("junit:junit:4.13.2")
+// (Required) Writing and executing Unit Tests on the JUnit Platform
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.3")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:5.9.3")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.3")
+
+    testImplementation("io.mockk:mockk:1.13.5")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.1")
 
     androidTestImplementation("androidx.test.ext:junit:1.1.3")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.4.0")

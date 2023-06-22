@@ -32,4 +32,7 @@ data class Location(val lat: Double, val lon: Double) {
 
         return bearing.toFloat()
     }
+
+    val latLng: com.google.android.gms.maps.model.LatLng
+        get() = com.google.android.gms.maps.model.LatLng(lat, lon)
 }

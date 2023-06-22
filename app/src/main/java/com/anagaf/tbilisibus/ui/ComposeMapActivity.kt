@@ -72,8 +72,6 @@ class ComposeMapActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            Log.d(TAG, "Recomposition")
-
             val uiState by viewModel.uiState.collectAsState()
 
             var isMapReady by remember { mutableStateOf(false) }
@@ -128,16 +126,16 @@ class ComposeMapActivity : ComponentActivity() {
                         viewModel.onMyLocationButtonClicked()
                     },
                     onShowRouteButtonClicked = {
-                        viewModel.zoomToShowRoute()
+                        viewModel.onZoomToShowRouteButtonClicked()
                     },
                     onReloadRouteButtonClicked = {
                         viewModel.onReloadRouteButtonClicked()
                     }
                 )
 
-                if (uiState.routNumberDialogRequired) {
+                if (uiState.routeNumberDialogRequired) {
                     RouteNumberDialog(onConfirmed = { routeNumber ->
-                        viewModel.onRouteNumberChangeConfirmed(routeNumber)
+                        viewModel.onRouteNumberChosen(routeNumber)
                     }, onDismissed = {
                         viewModel.onRouteNumberChangeDismissed()
                     })

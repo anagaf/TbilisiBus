@@ -7,7 +7,7 @@ import com.google.android.gms.maps.model.LatLng
 import javax.inject.Inject
 
 interface AppDataStore {
-    var lastMapPosition: CameraPosition?
+    var lastCameraPosition: CameraPosition?
     var lastRouteNumberRequestTimeInMillis: Long?
 }
 
@@ -29,7 +29,7 @@ class AppDataStoreImpl @Inject constructor(context: Context) : AppDataStore {
     private fun getFloat(key: String): Float? =
         if (prefs.contains(key)) prefs.getFloat(key, 0f) else null
 
-    override var lastMapPosition: CameraPosition?
+    override var lastCameraPosition: CameraPosition?
         get() {
             val lat = getFloat(LatKey)
             val lon = getFloat(LonKey)

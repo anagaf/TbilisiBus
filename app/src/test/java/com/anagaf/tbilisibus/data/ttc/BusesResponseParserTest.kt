@@ -5,8 +5,8 @@ import com.anagaf.tbilisibus.data.Location
 import com.anagaf.tbilisibus.data.Buses
 import com.anagaf.tbilisibus.data.Direction
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 
 class BusesResponseParserTest {
     @Test

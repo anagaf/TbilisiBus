@@ -5,8 +5,8 @@ import com.anagaf.tbilisibus.data.Location
 import com.anagaf.tbilisibus.data.Stop
 import com.anagaf.tbilisibus.data.Stops
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 
 class StopsResponseParserTest {
     @Test
