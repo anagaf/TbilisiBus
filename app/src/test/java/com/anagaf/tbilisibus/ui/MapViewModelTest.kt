@@ -8,8 +8,8 @@ import com.anagaf.tbilisibus.data.Direction
 import com.anagaf.tbilisibus.data.Location
 import com.anagaf.tbilisibus.data.Route
 import com.anagaf.tbilisibus.data.RouteProvider
+import com.anagaf.tbilisibus.data.RouteShape
 import com.anagaf.tbilisibus.data.Stop
-import com.anagaf.tbilisibus.data.Stops
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
@@ -63,22 +63,30 @@ private val kTestRoute =
     Route(
         number = kRouteNumber,
         buses = Buses(listOf(kTestBus)),
-        stops = Stops(listOf(kTestStop)),
+        shape = RouteShape(
+            stops = listOf(kTestStop),
+            points = listOf()
+        ),
     )
 
-private val kNewTestRoute =
+private
+val kNewTestRoute =
     Route(
         number = kRouteNumber,
         buses = Buses(listOf(kNewTestBus)),
-        stops = Stops(listOf(kTestStop)),
+        shape = RouteShape(
+            stops = listOf(kTestStop),
+            points = listOf()
+        ),
     )
 
-private val kTestMarkers = listOf(
+private
+val kTestMarkers = listOf(
     MapUiState.Marker(
         type = MapUiState.Marker.Type.Bus,
         location = kTestBus.location.latLng,
         direction = kTestBus.direction,
-        heading = kTestBus.location.getHeading(kTestStop.location)
+        heading = null
     ),
     MapUiState.Marker(
         type = MapUiState.Marker.Type.Stop,
@@ -88,12 +96,13 @@ private val kTestMarkers = listOf(
     )
 )
 
-private val kNewMarkers = listOf(
+private
+val kNewMarkers = listOf(
     MapUiState.Marker(
         type = MapUiState.Marker.Type.Bus,
         location = kNewTestBus.location.latLng,
         direction = kNewTestBus.direction,
-        heading = kNewTestBus.location.getHeading(kTestStop.location)
+        heading = null
     ),
     MapUiState.Marker(
         type = MapUiState.Marker.Type.Stop,
@@ -323,7 +332,7 @@ class MapViewModelTest {
             verifyUiState {
                 MapUiState(
                     cameraPosition = MapViewModel.kInitialCameraPosition,
-                    errorMessage = ex.message
+                    error = MapUiState.Error.RouteNotAvailable
                 )
             }
         }
@@ -397,7 +406,20 @@ class MapViewModelTest {
         verifyUiState {
             MapUiState(
                 cameraPosition = MapViewModel.kInitialCameraPosition,
-                errorMessage = ex.message
+                error = MapUiState.Error.LocationNotAvailable
+            )
+        }
+    }
+
+    @Test
+    fun `reset error message after been shown`() {
+        val ex = RuntimeException("Test exception")
+        coEvery { locationProvider.getLastLocation() } throws ex
+        viewModel.onMyLocationButtonClicked()
+        viewModel.onErrorMessageShown()
+        verifyUiState {
+            MapUiState(
+                cameraPosition = MapViewModel.kInitialCameraPosition,
             )
         }
     }

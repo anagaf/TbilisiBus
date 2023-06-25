@@ -8,7 +8,6 @@ import com.anagaf.tbilisibus.app.Preferences
 import com.anagaf.tbilisibus.data.Bus
 import com.anagaf.tbilisibus.data.RouteProvider
 import com.anagaf.tbilisibus.data.Stop
-import com.anagaf.tbilisibus.data.Stops
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
@@ -17,10 +16,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import mu.KotlinLogging
+import timber.log.Timber
 import javax.inject.Inject
-
-private const val TAG = "MapViewModel"
 
 @HiltViewModel
 class MapViewModel @Inject constructor(
@@ -37,8 +34,6 @@ class MapViewModel @Inject constructor(
             .zoom(12f)
             .build()
     }
-
-    private val logger = KotlinLogging.logger {}
 
     private val _uiState = MutableStateFlow(
         value = MapUiState(
@@ -90,20 +85,23 @@ class MapViewModel @Inject constructor(
                     )
                 }
             } catch (ex: Exception) {
-                logger.warn { "User location is not available: ${ex.message}" }
+                Timber.e("User location is not available: ${ex.message}")
                 _uiState.update {
-                    it.copy(inProgress = false, errorMessage = ex.message)
+                    it.copy(
+                        inProgress = false,
+                        error = MapUiState.Error.LocationNotAvailable,
+                    )
                 }
             }
         }
     }
 
-    private fun makeBusMarker(bus: Bus, stops: Stops): MapUiState.Marker =
+    private fun makeBusMarker(bus: Bus): MapUiState.Marker =
         MapUiState.Marker(
             MapUiState.Marker.Type.Bus,
             bus.location.latLng,
             bus.direction,
-            calculateBusHeading(bus, stops)
+            null
         )
 
     private fun makeStopMarker(stop: Stop): MapUiState.Marker =
@@ -114,15 +112,15 @@ class MapViewModel @Inject constructor(
             null
         )
 
-    private fun calculateBusHeading(bus: Bus, stops: Stops): Float? {
-        val nextStop = stops.items.find {
-            it.id == bus.nextStopId
-        }
-        if (nextStop == null) {
-            return null
-        }
-        return bus.location.getHeading(nextStop.location)
-    }
+//    private fun calculateBusHeading(bus: Bus, stops: Stops): Float? {
+//        val nextStop = stops.items.find {
+//            it.id == bus.nextStopId
+//        }
+//        if (nextStop == null) {
+//            return null
+//        }
+//        return bus.location.getHeading(nextStop.location)
+//    }
 
     fun onRouteNumberChosen(routeNumber: Int) {
         _uiState.update {
@@ -184,11 +182,13 @@ class MapViewModel @Inject constructor(
                 dataStore.lastRouteNumberRequestTimeInMillis = timeProvider.currentTimeMillis
 
                 val busMarkers = route.buses.items.map {
-                    makeBusMarker(it, route.stops)
+                    makeBusMarker(it)
                 }
-                val stopMarkers = route.stops.items.map {
+                val stopMarkers = route.shape.stops.map {
                     makeStopMarker(it)
                 }
+
+                Timber.i("Route request succeed: ${busMarkers.size} buses, ${stopMarkers.size}")
 
                 _uiState.update {
                     it.copy(
@@ -198,11 +198,13 @@ class MapViewModel @Inject constructor(
                     )
                 }
             } catch (ex: Exception) {
-                logger.error("Route request failed", ex)
+                Timber.e(ex, "Route request failed")
                 _uiState.update {
                     it.copy(
                         inProgress = false,
-                        errorMessage = ex.message
+                        // TODO: take message from resources
+                        //errorMessage = "Route request failed: ${ex.message}"
+                        error = MapUiState.Error.RouteNotAvailable
                     )
                 }
             }
@@ -212,6 +214,12 @@ class MapViewModel @Inject constructor(
     fun onChooseRouteButtonClicked() {
         _uiState.update {
             it.copy(routeNumberDialogRequired = true)
+        }
+    }
+
+    fun onErrorMessageShown() {
+        _uiState.update {
+            it.copy(error = null)
         }
     }
 }

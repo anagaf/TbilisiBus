@@ -1,5 +1,6 @@
 package com.anagaf.tbilisibus
 
+import android.annotation.SuppressLint
 import android.app.Application
 import com.anagaf.tbilisibus.app.AppDataStore
 import com.anagaf.tbilisibus.app.AppDataStoreImpl
@@ -7,9 +8,9 @@ import com.anagaf.tbilisibus.app.Preferences
 import com.anagaf.tbilisibus.app.PreferencesImpl
 import com.anagaf.tbilisibus.data.Buses
 import com.anagaf.tbilisibus.data.RouteProvider
-import com.anagaf.tbilisibus.data.Stops
+import com.anagaf.tbilisibus.data.RouteShape
 import com.anagaf.tbilisibus.data.ttc.BusesResponseParser
-import com.anagaf.tbilisibus.data.ttc.StopsResponseParser
+import com.anagaf.tbilisibus.data.ttc.RouteShapeResponseParser
 import com.anagaf.tbilisibus.data.ttc.TtcRetrofitService
 import com.anagaf.tbilisibus.data.ttc.TtcRouteProvider
 import com.anagaf.tbilisibus.ui.LocationProvider
@@ -27,6 +28,12 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
+
 
 @Module
 @InstallIn(ViewModelComponent::class)
@@ -39,18 +46,38 @@ internal object ViewModelHiltModule {
 
         val objectMapperModule = SimpleModule()
         objectMapperModule.addDeserializer(Buses::class.java, BusesResponseParser())
-        objectMapperModule.addDeserializer(Stops::class.java, StopsResponseParser())
+        objectMapperModule.addDeserializer(RouteShape::class.java, RouteShapeResponseParser())
         objectMapper.registerModule(objectMapperModule)
 
         val interceptor = HttpLoggingInterceptor()
         interceptor.level = HttpLoggingInterceptor.Level.BASIC
 
-        val httpClient = OkHttpClient.Builder().addInterceptor(interceptor).build()
+        // trusting all certificates is a bit dangerous but it's ok for this app
+        val trustAllCerts = arrayOf<TrustManager>(
+            @SuppressLint("CustomX509TrustManager")
+            object : X509TrustManager {
+                @SuppressLint("TrustAllX509TrustManager")
+                override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
+                @SuppressLint("TrustAllX509TrustManager")
+                override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
+                override fun getAcceptedIssuers(): Array<X509Certificate> {
+                    return arrayOf()
+                }
+            }
+        )
+        val sslContext = SSLContext.getInstance("SSL")
+        sslContext.init(null, trustAllCerts, SecureRandom())
+
+        val httpClient = OkHttpClient.Builder()
+            .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
+            .addInterceptor(interceptor)
+            .build()
 
         return Retrofit.Builder()
             .client(httpClient)
             .addConverterFactory(JacksonConverterFactory.create(objectMapper))
-            .baseUrl("http://transfer.ttc.com.ge:8080")
+//            .baseUrl("http://transfer.ttc.com.ge:8080")
+            .baseUrl("https://transfer.msplus.ge:2443")
             .build()
             .create(TtcRetrofitService::class.java)
     }

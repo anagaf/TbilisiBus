@@ -1,0 +1,34 @@
+{
+  "Id": "R97513",
+  "Type": "3",
+  "RouteNumber": "312",
+  "LongName": "Didi Lilo - M/S Isani",
+  "Color": "117a65",
+  "Shape": "44.96345490217209:41.73948915307085,44.96352195739746:41.7393030217242",
+  "RouteStops": [
+    {
+      "StopId": "2188",
+      "Name": "\"დიდი ლილო, ტაძრის ქუჩა\" - [2188]",
+      "Forward": false,
+      "Lon": 44.96345490217209,
+      "Lat": 41.73948915307085,
+      "Sequence": 1,
+      "Type": "bus",
+      "HasBoard": false,
+      "Virtual": false,
+      "Routes": []
+    },
+    {
+      "StopId": "4128",
+      "Name": "\"დიდი ლილო, იასამნის ქუჩა\" - [4128]",
+      "Forward": false,
+      "Lon": 44.96386528015137,
+      "Lat": 41.73815219765541,
+      "Sequence": 2,
+      "Type": "bus",
+      "HasBoard": false,
+      "Virtual": false,
+      "Routes": []
+    }
+  ]
+}

@@ -80,12 +80,13 @@ dependencies {
     implementation("androidx.activity:activity-ktx:1.6.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.1")
 
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-jackson:2.9.0")
     implementation("com.squareup.okhttp3:logging-interceptor:3.9.1")
 
-    implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
+    implementation("com.jakewharton.timber:timber:4.7.1")
 
     implementation("com.google.dagger:hilt-android:2.44")
     implementation("com.google.android.gms:play-services-location:21.0.1")

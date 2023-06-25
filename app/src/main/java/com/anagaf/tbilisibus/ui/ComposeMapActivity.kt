@@ -4,7 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Bundle
-import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -28,7 +28,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +46,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anagaf.tbilisibus.R
 import com.anagaf.tbilisibus.data.Direction
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -62,8 +62,6 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
-private const val TAG = "ComposeMapActivity"
-
 @AndroidEntryPoint
 class ComposeMapActivity : ComponentActivity() {
 
@@ -72,7 +70,7 @@ class ComposeMapActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val uiState by viewModel.uiState.collectAsState()
+            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
             var isMapReady by remember { mutableStateOf(false) }
 
@@ -95,11 +93,22 @@ class ComposeMapActivity : ComponentActivity() {
 
             LaunchedEffect(uiState.cameraBounds) {
                 if (uiState.cameraBounds != null) {
-                    Log.d(TAG, "Animating camera bounds: ${uiState.cameraBounds}")
                     cameraPositionState.animate(
                         CameraUpdateFactory.newLatLngBounds(uiState.cameraBounds!!, 100),
                         1_000
                     )
+                }
+            }
+
+            LaunchedEffect(uiState.error) {
+                if (uiState.error != null) {
+                    val messageId = when (uiState.error!!) {
+                        MapUiState.Error.RouteNotAvailable -> R.string.route_is_not_available
+                        MapUiState.Error.LocationNotAvailable -> R.string.location_not_available
+                    }
+                    Toast.makeText(applicationContext, getString(messageId), Toast.LENGTH_LONG)
+                        .show()
+                    viewModel.onErrorMessageShown()
                 }
             }
 
@@ -184,8 +193,6 @@ fun GoogleMapView(
         properties = MapProperties(isMyLocationEnabled = true),
         uiSettings = MapUiSettings(zoomControlsEnabled = false, myLocationButtonEnabled = false),
     ) {
-        Log.d(TAG, "Map recomposition")
-
         val rememberedMarkers = remember(markers) {
             markers
         }
@@ -197,7 +204,6 @@ fun GoogleMapView(
 
 @Composable
 fun Markers(markers: List<MapUiState.Marker>) {
-    Log.d(TAG, "Markers recomposition")
     for (marker in markers) {
         when (marker.type) {
             MapUiState.Marker.Type.Bus -> BusMarker(marker)

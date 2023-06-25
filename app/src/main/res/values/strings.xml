@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">TbilisiBus</string>
-    <string name="bus_locations_are_not_available">Bus locations are not available</string>
+    <string name="route_is_not_available">Route is not available</string>
+    <string name="location_not_available">Location is not available</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
     <string name="title_format">Bus №%d</string>

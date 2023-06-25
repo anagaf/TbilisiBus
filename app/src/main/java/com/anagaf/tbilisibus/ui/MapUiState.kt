@@ -7,13 +7,18 @@ import com.google.android.gms.maps.model.LatLngBounds
 
 data class MapUiState(
     val inProgress: Boolean = false,
-    val errorMessage: String? = null,
+    val error: Error? = null,
     val cameraPosition: CameraPosition,
     val cameraBounds: LatLngBounds? = null,
     val routeNumber: Int? = null,
     val routeMarkers: List<Marker> = emptyList(),
     val routeNumberDialogRequired: Boolean = false
 ) {
+    enum class Error {
+        RouteNotAvailable,
+        LocationNotAvailable
+    }
+
     data class Marker(
         val type: Type,
         val location: LatLng,
