@@ -2,8 +2,11 @@ package com.anagaf.tbilisibus.ui
 
 import com.anagaf.tbilisibus.app.AppDataStore
 import com.anagaf.tbilisibus.app.Preferences
+import com.anagaf.tbilisibus.data.Bus
 import com.anagaf.tbilisibus.data.Route
 import com.anagaf.tbilisibus.data.RouteProvider
+import com.anagaf.tbilisibus.data.ShapePoint
+import com.anagaf.tbilisibus.data.Stop
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import io.mockk.coEvery
@@ -35,20 +38,23 @@ private val kTestCameraPosition = CameraPosition.builder().target(LatLng(11.0, 1
 
 private const val kRouteNumber = 123
 
-private fun makeTestLatLng(index: Int) = LatLng(index.toDouble(), (index + 1).toDouble())
+private fun makeBus(index: Int) = Bus(LatLng(index.toDouble(), (index + 1).toDouble()))
+private fun makeStop(index: Int) = Stop(LatLng(index.toDouble(), (index + 1).toDouble()))
+private fun makeShapePoint(index: Int) =
+    ShapePoint(LatLng(index.toDouble(), (index + 1).toDouble()))
 
 private val kRoute =
     Route(
         number = kRouteNumber,
         forward = Route.Elements(
-            buses = listOf(makeTestLatLng(1), makeTestLatLng(2)),
-            stops = listOf(makeTestLatLng(3), makeTestLatLng(4)),
-            shapePoints = listOf(makeTestLatLng(5), makeTestLatLng(6))
+            buses = listOf(makeBus(1), makeBus(2)),
+            stops = listOf(makeStop(1), makeStop(2)),
+            shapePoints = listOf(makeShapePoint(1), makeShapePoint(2))
         ),
         backward = Route.Elements(
-            buses = listOf(makeTestLatLng(7), makeTestLatLng(8)),
-            stops = listOf(makeTestLatLng(9), makeTestLatLng(10)),
-            shapePoints = listOf(makeTestLatLng(11), makeTestLatLng(12))
+            buses = listOf(makeBus(3), makeBus(4)),
+            stops = listOf(makeStop(3), makeStop(4)),
+            shapePoints = listOf(makeShapePoint(3), makeShapePoint(4))
         )
     )
 
@@ -56,14 +62,14 @@ private val kNewRoute =
     Route(
         number = kRouteNumber,
         forward = Route.Elements(
-            buses = listOf(makeTestLatLng(8), makeTestLatLng(9)),
-            stops = listOf(makeTestLatLng(10), makeTestLatLng(11)),
-            shapePoints = listOf<LatLng>()
+            buses = listOf(makeBus(5), makeBus(6)),
+            stops = listOf(makeStop(5), makeStop(6)),
+            shapePoints = listOf(makeShapePoint(5), makeShapePoint(6))
         ),
         backward = Route.Elements(
-            buses = listOf(makeTestLatLng(12), makeTestLatLng(13)),
-            stops = listOf(makeTestLatLng(14), makeTestLatLng(15)),
-            shapePoints = listOf<LatLng>()
+            buses = listOf(makeBus(7), makeBus(8)),
+            stops = listOf(makeStop(7), makeStop(8)),
+            shapePoints = listOf(makeShapePoint(7), makeShapePoint(8))
         )
     )
 

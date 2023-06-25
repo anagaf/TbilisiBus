@@ -1,5 +1,6 @@
 package com.anagaf.tbilisibus.data.ttc
 
+import com.anagaf.tbilisibus.data.Bus
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
@@ -13,7 +14,7 @@ class BusesResponseParser : JsonDeserializer<Buses>() {
         parser: JsonParser?,
         ctxt: DeserializationContext?
     ): Buses {
-        val buses = mutableListOf<LatLng>()
+        val buses = mutableListOf<Bus>()
 
         val rootNode: JsonNode = parser?.codec?.readTree(parser)
             ?: throw JsonParseException(parser, "Cannot access root node")
@@ -21,12 +22,12 @@ class BusesResponseParser : JsonDeserializer<Buses>() {
         busArray.elements().forEach {
             buses.add(parseBus(it))
         }
-        return Buses(buses.toList())
+        return Buses(buses)
     }
 
-    private fun parseBus(node: JsonNode): LatLng {
+    private fun parseBus(node: JsonNode): Bus {
         val lat = node["lat"].asDouble()
         val lon = node["lon"].asDouble()
-        return LatLng(lat, lon)
+        return Bus(LatLng(lat, lon))
     }
 }

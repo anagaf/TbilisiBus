@@ -48,8 +48,10 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anagaf.tbilisibus.R
+import com.anagaf.tbilisibus.data.Bus
 import com.anagaf.tbilisibus.data.Direction
 import com.anagaf.tbilisibus.data.Route
+import com.anagaf.tbilisibus.data.ShapePoint
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
@@ -215,7 +217,7 @@ fun GoogleMapView(
 }
 
 @Composable
-fun BusMarkers(buses: List<LatLng>, direction: Direction) {
+fun BusMarkers(buses: List<Bus>, direction: Direction) {
     for (bus in buses) {
         BusMarker(bus, direction)
     }
@@ -229,14 +231,14 @@ fun StopMarkers(positions: List<LatLng>, direction: Direction) {
 }
 
 @Composable
-private fun BusMarker(position: LatLng, direction: Direction) {
+private fun BusMarker(bus: Bus, direction: Direction) {
     val iconId = when (direction) {
         Direction.Forward -> R.drawable.red_arrow
         Direction.Backward -> R.drawable.blue_arrow
     }
     Marker(
-        state = MarkerState(position = position),
-        icon = makeMarkerDrawable(LocalContext.current, iconId)
+        state = MarkerState(position = bus.position),
+        icon = makeMarkerDrawable(LocalContext.current, iconId),
     )
 }
 
@@ -259,12 +261,12 @@ fun StopMarker(position: LatLng, direction: Direction) {
 }
 
 @Composable
-fun RouteShape(shapePoints: List<LatLng>, direction: Direction) {
+fun RouteShape(shapePoints: List<ShapePoint>, direction: Direction) {
     val color = when (direction) {
         Direction.Forward -> Color.Red
         Direction.Backward -> Color.Blue
     }
-    Polyline(points = shapePoints, color = color)
+    Polyline(points = shapePoints.map { it.position }, color = color)
 }
 
 @Composable

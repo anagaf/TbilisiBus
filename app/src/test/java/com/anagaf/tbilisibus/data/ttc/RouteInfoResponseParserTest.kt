@@ -1,5 +1,7 @@
 package com.anagaf.tbilisibus.data.ttc
 
+import com.anagaf.tbilisibus.data.ShapePoint
+import com.anagaf.tbilisibus.data.Stop
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.android.gms.maps.model.LatLng
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -19,12 +21,12 @@ class RouteInfoResponseParserTest {
         )
         val expectedRouteInfo = RouteInfo(
             stops = listOf(
-                LatLng(41.73948915307085, 44.96345490217209),
-                LatLng(41.73815219765541, 44.96386528015137),
+                Stop(LatLng(41.73948915307085, 44.96345490217209)),
+                Stop(LatLng(41.73815219765541, 44.96386528015137)),
             ),
             shapePoints = listOf(
-                LatLng(41.73948915307085, 44.96345490217209),
-                LatLng(41.7393030217242, 44.96352195739746),
+                ShapePoint(LatLng(41.73948915307085, 44.96345490217209)),
+                ShapePoint(LatLng(41.7393030217242, 44.96352195739746)),
             )
         )
         assertEquals(expectedRouteInfo, shape)
