@@ -76,6 +76,7 @@ dependencies {
 
     implementation("com.google.android.gms:play-services-maps:18.1.0")
     implementation("com.google.maps.android:maps-compose:2.11.2")
+    implementation("com.google.maps.android:android-maps-utils:3.4.0")
 
     implementation("androidx.activity:activity-ktx:1.6.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1")

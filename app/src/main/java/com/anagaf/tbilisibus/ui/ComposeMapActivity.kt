@@ -52,6 +52,7 @@ import com.anagaf.tbilisibus.data.Bus
 import com.anagaf.tbilisibus.data.Direction
 import com.anagaf.tbilisibus.data.Route
 import com.anagaf.tbilisibus.data.ShapePoint
+import com.anagaf.tbilisibus.data.calculateBusHeading
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
@@ -200,13 +201,13 @@ fun GoogleMapView(
     ) {
         if (route != null) {
             with(route.forward) {
-                BusMarkers(buses, Direction.Forward)
+                BusMarkers(buses, shapePoints, Direction.Forward)
                 RouteShape(shapePoints, Direction.Forward)
                 // StopMarkers(stops, Direction.Forward)
             }
 
             with(route.backward) {
-                BusMarkers(buses, Direction.Backward)
+                BusMarkers(buses, shapePoints, Direction.Backward)
                 RouteShape(shapePoints, Direction.Backward)
                 // StopMarkers(stops, Direction.Backward)
             }
@@ -217,9 +218,9 @@ fun GoogleMapView(
 }
 
 @Composable
-fun BusMarkers(buses: List<Bus>, direction: Direction) {
+fun BusMarkers(buses: List<Bus>, shapePoints: List<ShapePoint>, direction: Direction) {
     for (bus in buses) {
-        BusMarker(bus, direction)
+        BusMarker(bus, shapePoints, direction)
     }
 }
 
@@ -231,14 +232,16 @@ fun StopMarkers(positions: List<LatLng>, direction: Direction) {
 }
 
 @Composable
-private fun BusMarker(bus: Bus, direction: Direction) {
+private fun BusMarker(bus: Bus, shapePoints: List<ShapePoint>, direction: Direction) {
     val iconId = when (direction) {
         Direction.Forward -> R.drawable.red_arrow
         Direction.Backward -> R.drawable.blue_arrow
     }
+    val heading = calculateBusHeading(bus, shapePoints)
     Marker(
         state = MarkerState(position = bus.position),
         icon = makeMarkerDrawable(LocalContext.current, iconId),
+        rotation = heading?.toFloat() ?: 0f
     )
 }
 
