@@ -3,4 +3,6 @@
     <dimen name="map_control_size">64dp</dimen>
     <dimen name="map_control_gap">6dp</dimen>
     <dimen name="default_padding">6dp</dimen>
+    <dimen name="bus_icon_width">15dp</dimen>
+    <dimen name="bus_icon_height">19dp</dimen>
 </resources>

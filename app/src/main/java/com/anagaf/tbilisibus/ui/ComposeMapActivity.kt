@@ -68,6 +68,7 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 @AndroidEntryPoint
 class ComposeMapActivity : ComponentActivity() {
@@ -238,6 +239,7 @@ private fun BusMarker(bus: Bus, shapePoints: List<ShapePoint>, direction: Direct
         Direction.Backward -> R.drawable.blue_arrow
     }
     val heading = calculateBusHeading(bus, shapePoints)
+    Timber.w("Bus heading is $heading")
     Marker(
         state = MarkerState(position = bus.position),
         icon = makeMarkerDrawable(LocalContext.current, iconId),
