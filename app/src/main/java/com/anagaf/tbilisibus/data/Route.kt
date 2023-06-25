@@ -3,7 +3,7 @@ package com.anagaf.tbilisibus.data
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 
-data class Route(val number: Int, val forwardElements: Elements, val backwardElements: Elements) {
+data class Route(val number: Int, val forward: Elements, val backward: Elements) {
     data class Elements(
         val buses: List<LatLng>,
         val stops: List<LatLng>,
@@ -13,10 +13,10 @@ data class Route(val number: Int, val forwardElements: Elements, val backwardEle
     val bounds: LatLngBounds
         get() {
             val builder = LatLngBounds.builder()
-            forwardElements.shapePoints.forEach {
+            forward.shapePoints.forEach {
                 builder.include(it)
             }
-            backwardElements.shapePoints.forEach {
+            backward.shapePoints.forEach {
                 builder.include(it)
             }
             return builder.build()

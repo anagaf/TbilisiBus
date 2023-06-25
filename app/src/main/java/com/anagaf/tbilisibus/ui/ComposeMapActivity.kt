@@ -3,8 +3,6 @@ package com.anagaf.tbilisibus.ui
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.drawable.AdaptiveIconDrawable
-import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -62,11 +60,11 @@ import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 @AndroidEntryPoint
 class ComposeMapActivity : ComponentActivity() {
@@ -199,11 +197,19 @@ fun GoogleMapView(
         uiSettings = MapUiSettings(zoomControlsEnabled = false, myLocationButtonEnabled = false),
     ) {
         if (route != null) {
-            BusMarkers(route.forwardElements.buses, Direction.Forward)
-            BusMarkers(route.backwardElements.buses, Direction.Backward)
+            with(route.forward) {
+                BusMarkers(buses, Direction.Forward)
+                RouteShape(shapePoints, Direction.Forward)
+                // StopMarkers(stops, Direction.Forward)
+            }
 
-            StopMarkers(route.forwardElements.stops, Direction.Forward)
-            StopMarkers(route.forwardElements.stops, Direction.Backward)
+            with(route.backward) {
+                BusMarkers(buses, Direction.Backward)
+                RouteShape(shapePoints, Direction.Backward)
+                // StopMarkers(stops, Direction.Backward)
+            }
+
+
         }
     }
 }
@@ -250,6 +256,15 @@ fun StopMarker(position: LatLng, direction: Direction) {
             Direction.Backward -> backwardIcon
         }
     )
+}
+
+@Composable
+fun RouteShape(shapePoints: List<LatLng>, direction: Direction) {
+    val color = when (direction) {
+        Direction.Forward -> Color.Red
+        Direction.Backward -> Color.Blue
+    }
+    Polyline(points = shapePoints, color = color)
 }
 
 @Composable

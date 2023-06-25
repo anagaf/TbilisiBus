@@ -40,12 +40,12 @@ private fun makeTestLatLng(index: Int) = LatLng(index.toDouble(), (index + 1).to
 private val kRoute =
     Route(
         number = kRouteNumber,
-        forwardElements = Route.Elements(
+        forward = Route.Elements(
             buses = listOf(makeTestLatLng(1), makeTestLatLng(2)),
             stops = listOf(makeTestLatLng(3), makeTestLatLng(4)),
             shapePoints = listOf(makeTestLatLng(5), makeTestLatLng(6))
         ),
-        backwardElements = Route.Elements(
+        backward = Route.Elements(
             buses = listOf(makeTestLatLng(7), makeTestLatLng(8)),
             stops = listOf(makeTestLatLng(9), makeTestLatLng(10)),
             shapePoints = listOf(makeTestLatLng(11), makeTestLatLng(12))
@@ -55,12 +55,12 @@ private val kRoute =
 private val kNewRoute =
     Route(
         number = kRouteNumber,
-        forwardElements = Route.Elements(
+        forward = Route.Elements(
             buses = listOf(makeTestLatLng(8), makeTestLatLng(9)),
             stops = listOf(makeTestLatLng(10), makeTestLatLng(11)),
             shapePoints = listOf<LatLng>()
         ),
-        backwardElements = Route.Elements(
+        backward = Route.Elements(
             buses = listOf(makeTestLatLng(12), makeTestLatLng(13)),
             stops = listOf(makeTestLatLng(14), makeTestLatLng(15)),
             shapePoints = listOf<LatLng>()
