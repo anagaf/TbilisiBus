@@ -5,12 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anagaf.tbilisibus.app.AppDataStore
 import com.anagaf.tbilisibus.app.Preferences
-import com.anagaf.tbilisibus.data.Bus
 import com.anagaf.tbilisibus.data.RouteProvider
-import com.anagaf.tbilisibus.data.Stop
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.LatLngBounds
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -48,13 +45,13 @@ class MapViewModel @Inject constructor(
             _uiState.update { it.copy(cameraPosition = dataStore.lastCameraPosition!!) }
         }
 
-        if (_uiState.value.routeNumber == null) {
+        if (_uiState.value.route == null) {
             requestRouteNumber()
         } else {
             if (shouldRequestRouteNumber()) {
                 requestRouteNumber()
             } else {
-                onRouteNumberChosen(_uiState.value.routeNumber!!)
+                onRouteNumberChosen(_uiState.value.route!!.number)
             }
         }
     }
@@ -96,32 +93,6 @@ class MapViewModel @Inject constructor(
         }
     }
 
-    private fun makeBusMarker(bus: Bus): MapUiState.Marker =
-        MapUiState.Marker(
-            MapUiState.Marker.Type.Bus,
-            bus.location.latLng,
-            bus.direction,
-            null
-        )
-
-    private fun makeStopMarker(stop: Stop): MapUiState.Marker =
-        MapUiState.Marker(
-            MapUiState.Marker.Type.Stop,
-            stop.location.latLng,
-            stop.direction,
-            null
-        )
-
-//    private fun calculateBusHeading(bus: Bus, stops: Stops): Float? {
-//        val nextStop = stops.items.find {
-//            it.id == bus.nextStopId
-//        }
-//        if (nextStop == null) {
-//            return null
-//        }
-//        return bus.location.getHeading(nextStop.location)
-//    }
-
     fun onRouteNumberChosen(routeNumber: Int) {
         _uiState.update {
             it.copy(routeNumberDialogRequired = false)
@@ -136,20 +107,15 @@ class MapViewModel @Inject constructor(
     }
 
     fun onReloadRouteButtonClicked() {
-        if (_uiState.value.routeNumber != null) {
-            retrieveRoute(_uiState.value.routeNumber!!)
+        if (_uiState.value.route != null) {
+            retrieveRoute(_uiState.value.route!!.number)
         }
     }
 
     fun onZoomToShowRouteButtonClicked() {
-        if (_uiState.value.routeMarkers.isNotEmpty()) {
-            val markerBounds = LatLngBounds.builder().apply {
-                _uiState.value.routeMarkers.forEach { marker: MapUiState.Marker ->
-                    include(marker.location)
-                }
-            }.build()
+        _uiState.value.route?.let {
             _uiState.update {
-                it.copy(cameraBounds = markerBounds)
+                it.copy(cameraBounds = it.route!!.bounds)
             }
         }
     }
@@ -181,20 +147,10 @@ class MapViewModel @Inject constructor(
 
                 dataStore.lastRouteNumberRequestTimeInMillis = timeProvider.currentTimeMillis
 
-                val busMarkers = route.buses.items.map {
-                    makeBusMarker(it)
-                }
-                val stopMarkers = route.shape.stops.map {
-                    makeStopMarker(it)
-                }
-
-                Timber.i("Route request succeed: ${busMarkers.size} buses, ${stopMarkers.size}")
-
                 _uiState.update {
                     it.copy(
                         inProgress = false,
-                        routeNumber = routeNumber,
-                        routeMarkers = busMarkers + stopMarkers,
+                        route = route,
                     )
                 }
             } catch (ex: Exception) {

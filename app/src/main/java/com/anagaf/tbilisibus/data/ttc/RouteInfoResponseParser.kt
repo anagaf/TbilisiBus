@@ -1,9 +1,5 @@
 package com.anagaf.tbilisibus.data.ttc
 
-import com.anagaf.tbilisibus.data.Direction
-import com.anagaf.tbilisibus.data.Location
-import com.anagaf.tbilisibus.data.RouteShape
-import com.anagaf.tbilisibus.data.Stop
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
@@ -11,19 +7,19 @@ import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.JsonNode
 import com.google.android.gms.maps.model.LatLng
 
-class RouteShapeResponseParser : JsonDeserializer<RouteShape>() {
+class RouteInfoResponseParser : JsonDeserializer<RouteInfo>() {
 
     override fun deserialize(
         parser: JsonParser?,
         ctxt: DeserializationContext?
-    ): RouteShape {
+    ): RouteInfo {
         val rootNode: JsonNode = parser?.codec?.readTree(parser)
             ?: throw JsonParseException(parser, "Cannot access root node")
-        return RouteShape(stops = parseStops(rootNode), points = parsePoints(rootNode))
+        return RouteInfo(stops = parseStops(rootNode), shapePoints = parseShapePoints(rootNode))
     }
 
-    private fun parseStops(rootNode: JsonNode): List<Stop> {
-        val stops = mutableListOf<Stop>()
+    private fun parseStops(rootNode: JsonNode): List<LatLng> {
+        val stops = mutableListOf<LatLng>()
         val stopsArray = rootNode.get("RouteStops")
         stopsArray.elements().forEach {
             stops.add(parseStop(it))
@@ -31,15 +27,13 @@ class RouteShapeResponseParser : JsonDeserializer<RouteShape>() {
         return stops
     }
 
-    private fun parseStop(node: JsonNode): Stop {
-        val id = node["StopId"].asInt()
+    private fun parseStop(node: JsonNode): LatLng {
         val lat = node["Lat"].asDouble()
         val lon = node["Lon"].asDouble()
-        val direction = if (node["Forward"].asBoolean()) Direction.Forward else Direction.Backward
-        return Stop(id, Location(lat, lon), direction)
+        return LatLng(lat, lon)
     }
 
-    private fun parsePoints(rootNode: JsonNode): List<LatLng> {
+    private fun parseShapePoints(rootNode: JsonNode): List<LatLng> {
         val points = mutableListOf<LatLng>()
         val shapeNode = rootNode.get("Shape")
         val shapeStr = shapeNode.asText()

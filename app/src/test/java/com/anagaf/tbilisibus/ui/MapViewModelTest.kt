@@ -2,17 +2,10 @@ package com.anagaf.tbilisibus.ui
 
 import com.anagaf.tbilisibus.app.AppDataStore
 import com.anagaf.tbilisibus.app.Preferences
-import com.anagaf.tbilisibus.data.Bus
-import com.anagaf.tbilisibus.data.Buses
-import com.anagaf.tbilisibus.data.Direction
-import com.anagaf.tbilisibus.data.Location
 import com.anagaf.tbilisibus.data.Route
 import com.anagaf.tbilisibus.data.RouteProvider
-import com.anagaf.tbilisibus.data.RouteShape
-import com.anagaf.tbilisibus.data.Stop
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.LatLngBounds
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -42,75 +35,37 @@ private val kTestCameraPosition = CameraPosition.builder().target(LatLng(11.0, 1
 
 private const val kRouteNumber = 123
 
-private val kTestStop =
-    Stop(id = 123, location = Location(3.0, 3.0), direction = Direction.Forward)
+private fun makeTestLatLng(index: Int) = LatLng(index.toDouble(), (index + 1).toDouble())
 
-private val kTestBus =
-    Bus(
-        location = Location(1.0, 2.0),
-        direction = Direction.Forward,
-        nextStopId = kTestStop.id
-    )
-
-private val kNewTestBus =
-    Bus(
-        location = Location(6.0, 7.0),
-        direction = Direction.Forward,
-        nextStopId = kTestStop.id
-    )
-
-private val kTestRoute =
+private val kRoute =
     Route(
         number = kRouteNumber,
-        buses = Buses(listOf(kTestBus)),
-        shape = RouteShape(
-            stops = listOf(kTestStop),
-            points = listOf()
+        forwardElements = Route.Elements(
+            buses = listOf(makeTestLatLng(1), makeTestLatLng(2)),
+            stops = listOf(makeTestLatLng(3), makeTestLatLng(4)),
+            shapePoints = listOf(makeTestLatLng(5), makeTestLatLng(6))
         ),
+        backwardElements = Route.Elements(
+            buses = listOf(makeTestLatLng(7), makeTestLatLng(8)),
+            stops = listOf(makeTestLatLng(9), makeTestLatLng(10)),
+            shapePoints = listOf(makeTestLatLng(11), makeTestLatLng(12))
+        )
     )
 
-private
-val kNewTestRoute =
+private val kNewRoute =
     Route(
         number = kRouteNumber,
-        buses = Buses(listOf(kNewTestBus)),
-        shape = RouteShape(
-            stops = listOf(kTestStop),
-            points = listOf()
+        forwardElements = Route.Elements(
+            buses = listOf(makeTestLatLng(8), makeTestLatLng(9)),
+            stops = listOf(makeTestLatLng(10), makeTestLatLng(11)),
+            shapePoints = listOf<LatLng>()
         ),
+        backwardElements = Route.Elements(
+            buses = listOf(makeTestLatLng(12), makeTestLatLng(13)),
+            stops = listOf(makeTestLatLng(14), makeTestLatLng(15)),
+            shapePoints = listOf<LatLng>()
+        )
     )
-
-private
-val kTestMarkers = listOf(
-    MapUiState.Marker(
-        type = MapUiState.Marker.Type.Bus,
-        location = kTestBus.location.latLng,
-        direction = kTestBus.direction,
-        heading = null
-    ),
-    MapUiState.Marker(
-        type = MapUiState.Marker.Type.Stop,
-        location = kTestStop.location.latLng,
-        direction = kTestStop.direction,
-        heading = null
-    )
-)
-
-private
-val kNewMarkers = listOf(
-    MapUiState.Marker(
-        type = MapUiState.Marker.Type.Bus,
-        location = kNewTestBus.location.latLng,
-        direction = kNewTestBus.direction,
-        heading = null
-    ),
-    MapUiState.Marker(
-        type = MapUiState.Marker.Type.Stop,
-        location = kTestStop.location.latLng,
-        direction = kTestStop.direction,
-        heading = null
-    )
-)
 
 private const val kCurrentTimeMillis = 123456789L
 
@@ -154,11 +109,12 @@ class MapViewModelTest {
     }
 
     private fun verifyUiState(expectedBuilder: () -> MapUiState) {
-        assertEquals(expectedBuilder(), viewModel.uiState.value)
+        val expected = expectedBuilder()
+        assertEquals(expected, viewModel.uiState.value)
     }
 
     private fun prepareRoute() {
-        coEvery { routeProvider.getRoute(kRouteNumber) } returns (kTestRoute)
+        coEvery { routeProvider.getRoute(kRouteNumber) } returns (kRoute)
         viewModel.onRouteNumberChosen(kRouteNumber)
     }
 
@@ -207,15 +163,14 @@ class MapViewModelTest {
 
             every { timeProvider.currentTimeMillis } returns kCurrentTimeMillis
 
-            coEvery { routeProvider.getRoute(kRouteNumber) } returns kTestRoute
+            coEvery { routeProvider.getRoute(kRouteNumber) } returns kRoute
 
             viewModel.onRouteNumberChosen(kRouteNumber)
 
             verifyUiState {
                 MapUiState(
                     cameraPosition = MapViewModel.kInitialCameraPosition,
-                    routeNumber = kRouteNumber,
-                    routeMarkers = kTestMarkers,
+                    route = kRoute
                 )
             }
         }
@@ -238,8 +193,8 @@ class MapViewModelTest {
             } returns Unit
 
             coEvery { routeProvider.getRoute(kRouteNumber) } returnsMany listOf(
-                kTestRoute,
-                kNewTestRoute
+                kRoute,
+                kNewRoute
             )
 
             viewModel.onRouteNumberChosen(kRouteNumber)
@@ -248,8 +203,7 @@ class MapViewModelTest {
             verifyUiState {
                 MapUiState(
                     cameraPosition = MapViewModel.kInitialCameraPosition,
-                    routeNumber = kRouteNumber,
-                    routeMarkers = kNewMarkers,
+                    route = kNewRoute
                 )
             }
 
@@ -279,8 +233,7 @@ class MapViewModelTest {
             verifyUiState {
                 MapUiState(
                     cameraPosition = MapViewModel.kInitialCameraPosition,
-                    routeNumber = kRouteNumber,
-                    routeMarkers = kTestMarkers,
+                    route = kRoute,
                     routeNumberDialogRequired = true
                 )
             }
@@ -299,8 +252,8 @@ class MapViewModelTest {
             )
 
             coEvery { routeProvider.getRoute(kRouteNumber) } returnsMany listOf(
-                kTestRoute,
-                kNewTestRoute
+                kRoute,
+                kNewRoute
             )
 
             viewModel.onRouteNumberChosen(kRouteNumber)
@@ -312,8 +265,7 @@ class MapViewModelTest {
             verifyUiState {
                 MapUiState(
                     cameraPosition = MapViewModel.kInitialCameraPosition,
-                    routeNumber = kRouteNumber,
-                    routeMarkers = kNewMarkers,
+                    route = kNewRoute,
                 )
             }
 
@@ -357,18 +309,11 @@ class MapViewModelTest {
 
             viewModel.onZoomToShowRouteButtonClicked()
 
-            val expectedCameraBounds = kTestMarkers.let {
-                LatLngBounds.builder().apply {
-                    it.forEach { include(it.location) }
-                }.build()
-            }
-
             verifyUiState {
                 MapUiState(
                     cameraPosition = MapViewModel.kInitialCameraPosition,
-                    routeNumber = kRouteNumber,
-                    routeMarkers = kTestMarkers,
-                    cameraBounds = expectedCameraBounds
+                    route = kRoute,
+                    cameraBounds = kRoute.bounds
                 )
             }
         }

@@ -2,9 +2,9 @@ package com.anagaf.tbilisibus.data.ttc
 
 import com.anagaf.tbilisibus.data.Bus
 import com.anagaf.tbilisibus.data.Location
-import com.anagaf.tbilisibus.data.Buses
 import com.anagaf.tbilisibus.data.Direction
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.google.android.gms.maps.model.LatLng
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -21,8 +21,8 @@ class BusesResponseParserTest {
             mapper.deserializationContext
         )
         val expectedBuses = listOf(
-            Bus(Location(41.76619056790743, 44.77884267730354), Direction.Forward, 3527),
-            Bus(Location(41.74894996470203, 44.777173414131894), Direction.Backward, 903),
+            LatLng(41.76619056790743, 44.77884267730354),
+            LatLng(41.74894996470203, 44.777173414131894),
         )
         val expectedResponse = Buses(expectedBuses)
         assertEquals(expectedResponse, buses)

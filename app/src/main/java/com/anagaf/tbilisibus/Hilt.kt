@@ -6,11 +6,10 @@ import com.anagaf.tbilisibus.app.AppDataStore
 import com.anagaf.tbilisibus.app.AppDataStoreImpl
 import com.anagaf.tbilisibus.app.Preferences
 import com.anagaf.tbilisibus.app.PreferencesImpl
-import com.anagaf.tbilisibus.data.Buses
+import com.anagaf.tbilisibus.data.ttc.Buses
 import com.anagaf.tbilisibus.data.RouteProvider
-import com.anagaf.tbilisibus.data.RouteShape
 import com.anagaf.tbilisibus.data.ttc.BusesResponseParser
-import com.anagaf.tbilisibus.data.ttc.RouteShapeResponseParser
+import com.anagaf.tbilisibus.data.ttc.RouteInfoResponseParser
 import com.anagaf.tbilisibus.data.ttc.TtcRetrofitService
 import com.anagaf.tbilisibus.data.ttc.TtcRouteProvider
 import com.anagaf.tbilisibus.ui.LocationProvider
@@ -46,7 +45,10 @@ internal object ViewModelHiltModule {
 
         val objectMapperModule = SimpleModule()
         objectMapperModule.addDeserializer(Buses::class.java, BusesResponseParser())
-        objectMapperModule.addDeserializer(RouteShape::class.java, RouteShapeResponseParser())
+        objectMapperModule.addDeserializer(
+            com.anagaf.tbilisibus.data.ttc.RouteInfo::class.java,
+            RouteInfoResponseParser()
+        )
         objectMapper.registerModule(objectMapperModule)
 
         val interceptor = HttpLoggingInterceptor()
@@ -57,9 +59,13 @@ internal object ViewModelHiltModule {
             @SuppressLint("CustomX509TrustManager")
             object : X509TrustManager {
                 @SuppressLint("TrustAllX509TrustManager")
-                override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
+                override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {
+                }
+
                 @SuppressLint("TrustAllX509TrustManager")
-                override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
+                override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {
+                }
+
                 override fun getAcceptedIssuers(): Array<X509Certificate> {
                     return arrayOf()
                 }

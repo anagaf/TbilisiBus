@@ -3,6 +3,8 @@ package com.anagaf.tbilisibus.ui
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.drawable.AdaptiveIconDrawable
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -49,9 +51,11 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anagaf.tbilisibus.R
 import com.anagaf.tbilisibus.data.Direction
+import com.anagaf.tbilisibus.data.Route
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
@@ -59,16 +63,18 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.maps.android.compose.rememberMarkerState
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 @AndroidEntryPoint
 class ComposeMapActivity : ComponentActivity() {
-
     private val viewModel: MapViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -114,7 +120,7 @@ class ComposeMapActivity : ComponentActivity() {
 
             Box(Modifier.fillMaxSize()) {
                 GoogleMapView(
-                    markers = uiState.routeMarkers,
+                    route = uiState.route,
                     modifier = Modifier.matchParentSize(),
                     cameraPositionState = cameraPositionState,
                     onMapLoaded = {
@@ -127,7 +133,7 @@ class ComposeMapActivity : ComponentActivity() {
             if (isMapReady) {
                 MapControlButtons(
                     cameraPositionState = cameraPositionState,
-                    routeAvailable = uiState.routeMarkers.isNotEmpty(),
+                    routeAvailable = uiState.route != null,
                     onChooseRouteButtonClicked = {
                         viewModel.onChooseRouteButtonClicked()
                     },
@@ -160,7 +166,7 @@ class ComposeMapActivity : ComponentActivity() {
                 }
             }
 
-            if (uiState.routeNumber != null) {
+            if (uiState.route != null) {
                 Box(
                     contentAlignment = Alignment.TopCenter,
                     modifier = Modifier
@@ -168,7 +174,7 @@ class ComposeMapActivity : ComponentActivity() {
                         .padding(dimensionResource(R.dimen.default_padding))
                 ) {
                     Text(
-                        text = getString(R.string.title_format).format(uiState.routeNumber),
+                        text = getString(R.string.title_format).format(uiState.route!!.number),
                         fontSize = 24.sp,
                         color = colorResource(id = R.color.map_control),
                     )
@@ -180,11 +186,10 @@ class ComposeMapActivity : ComponentActivity() {
 
 @Composable
 fun GoogleMapView(
-    markers: List<MapUiState.Marker>,
+    route: Route?,
     modifier: Modifier = Modifier,
     cameraPositionState: CameraPositionState,
     onMapLoaded: () -> Unit = {},
-    content: @Composable () -> Unit = {}
 ) {
     GoogleMap(
         modifier = modifier,
@@ -193,40 +198,44 @@ fun GoogleMapView(
         properties = MapProperties(isMyLocationEnabled = true),
         uiSettings = MapUiSettings(zoomControlsEnabled = false, myLocationButtonEnabled = false),
     ) {
-        val rememberedMarkers = remember(markers) {
-            markers
-        }
+        if (route != null) {
+            BusMarkers(route.forwardElements.buses, Direction.Forward)
+            BusMarkers(route.backwardElements.buses, Direction.Backward)
 
-        Markers(markers = rememberedMarkers)
-    }
-
-}
-
-@Composable
-fun Markers(markers: List<MapUiState.Marker>) {
-    for (marker in markers) {
-        when (marker.type) {
-            MapUiState.Marker.Type.Bus -> BusMarker(marker)
-            MapUiState.Marker.Type.Stop -> StopMarker(marker)
+            StopMarkers(route.forwardElements.stops, Direction.Forward)
+            StopMarkers(route.forwardElements.stops, Direction.Backward)
         }
     }
 }
 
+@Composable
+fun BusMarkers(buses: List<LatLng>, direction: Direction) {
+    for (bus in buses) {
+        BusMarker(bus, direction)
+    }
+}
 
 @Composable
-private fun BusMarker(marker: MapUiState.Marker) {
-    val iconId = when (marker.direction) {
+fun StopMarkers(positions: List<LatLng>, direction: Direction) {
+    for (pos in positions) {
+        StopMarker(pos, direction)
+    }
+}
+
+@Composable
+private fun BusMarker(position: LatLng, direction: Direction) {
+    val iconId = when (direction) {
         Direction.Forward -> R.drawable.red_arrow
         Direction.Backward -> R.drawable.blue_arrow
     }
     Marker(
-        state = MarkerState(position = marker.location),
+        state = MarkerState(position = position),
         icon = makeMarkerDrawable(LocalContext.current, iconId)
     )
 }
 
 @Composable
-fun StopMarker(marker: MapUiState.Marker) {
+fun StopMarker(position: LatLng, direction: Direction) {
     val context = LocalContext.current
     val forwardIcon = remember(context) {
         makeMarkerDrawable(context, R.drawable.red_stop)
@@ -235,14 +244,13 @@ fun StopMarker(marker: MapUiState.Marker) {
         makeMarkerDrawable(context, R.drawable.blue_stop)
     }
     Marker(
-        state = MarkerState(position = marker.location),
-        icon = when (marker.direction) {
+        state = rememberMarkerState(position = position),
+        icon = when (direction) {
             Direction.Forward -> forwardIcon
             Direction.Backward -> backwardIcon
         }
     )
 }
-
 
 @Composable
 private fun MapControlButtons(
