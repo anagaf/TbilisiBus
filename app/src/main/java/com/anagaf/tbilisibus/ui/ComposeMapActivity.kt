@@ -38,7 +38,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -52,6 +51,7 @@ import com.anagaf.tbilisibus.data.Bus
 import com.anagaf.tbilisibus.data.Direction
 import com.anagaf.tbilisibus.data.Route
 import com.anagaf.tbilisibus.data.ShapePoint
+import com.anagaf.tbilisibus.data.Stop
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
@@ -67,7 +67,23 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import timber.log.Timber
+
+object MarkerIcons {
+    lateinit var bus: Map<Direction, BitmapDescriptor>
+    lateinit var stop: Map<Direction, BitmapDescriptor>
+
+    fun init(context: Context) {
+        bus = mapOf(
+            Direction.Forward to makeMarkerDrawable(context, R.drawable.red_arrow),
+            Direction.Backward to makeMarkerDrawable(context, R.drawable.blue_arrow)
+        )
+
+        stop = mapOf(
+            Direction.Forward to makeMarkerDrawable(context, R.drawable.red_stop),
+            Direction.Backward to makeMarkerDrawable(context, R.drawable.blue_stop)
+        )
+    }
+}
 
 @AndroidEntryPoint
 class ComposeMapActivity : ComponentActivity() {
@@ -126,6 +142,7 @@ class ComposeMapActivity : ComponentActivity() {
                     cameraPositionState = cameraPositionState,
                     onMapLoaded = {
                         isMapReady = true
+                        MarkerIcons.init(this@ComposeMapActivity)
                         viewModel.onMapReady()
                     },
                 )
@@ -203,13 +220,13 @@ fun GoogleMapView(
             with(route.forward) {
                 BusMarkers(buses, shapePoints, Direction.Forward)
                 RouteShape(shapePoints, Direction.Forward)
-                // StopMarkers(stops, Direction.Forward)
+                StopMarkers(stops, Direction.Forward, cameraPositionState)
             }
 
             with(route.backward) {
                 BusMarkers(buses, shapePoints, Direction.Backward)
                 RouteShape(shapePoints, Direction.Backward)
-                // StopMarkers(stops, Direction.Backward)
+                StopMarkers(stops, Direction.Backward, cameraPositionState)
             }
 
 
@@ -225,42 +242,32 @@ fun BusMarkers(buses: List<Bus>, shapePoints: List<ShapePoint>, direction: Direc
 }
 
 @Composable
-fun StopMarkers(positions: List<LatLng>, direction: Direction) {
-    for (pos in positions) {
-        StopMarker(pos, direction)
+fun StopMarkers(stops: List<Stop>, direction: Direction, cameraPositionState: CameraPositionState) {
+    if (cameraPositionState.position.zoom > 14) {
+        val visibleBounds = cameraPositionState.projection?.visibleRegion?.latLngBounds
+        for (stop in stops) {
+            if (visibleBounds != null && visibleBounds.contains(stop.position)) {
+                StopMarker(stop.position, direction)
+            }
+        }
     }
 }
 
 @Composable
 private fun BusMarker(bus: Bus, shapePoints: List<ShapePoint>, direction: Direction) {
-    val iconId = when (direction) {
-        Direction.Forward -> R.drawable.red_arrow
-        Direction.Backward -> R.drawable.blue_arrow
-    }
     val heading = calculateBusHeading(bus.position, shapePoints)
-    Timber.w("Bus heading is $heading")
     Marker(
         state = MarkerState(position = bus.position),
-        icon = makeMarkerDrawable(LocalContext.current, iconId),
+        icon = MarkerIcons.bus[direction],
         rotation = heading?.toFloat() ?: 0f
     )
 }
 
 @Composable
 fun StopMarker(position: LatLng, direction: Direction) {
-    val context = LocalContext.current
-    val forwardIcon = remember(context) {
-        makeMarkerDrawable(context, R.drawable.red_stop)
-    }
-    val backwardIcon = remember(context) {
-        makeMarkerDrawable(context, R.drawable.blue_stop)
-    }
     Marker(
         state = rememberMarkerState(position = position),
-        icon = when (direction) {
-            Direction.Forward -> forwardIcon
-            Direction.Backward -> backwardIcon
-        }
+        icon = MarkerIcons.stop[direction],
     )
 }
 
