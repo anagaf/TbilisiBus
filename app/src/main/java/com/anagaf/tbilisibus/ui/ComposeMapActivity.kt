@@ -52,7 +52,6 @@ import com.anagaf.tbilisibus.data.Bus
 import com.anagaf.tbilisibus.data.Direction
 import com.anagaf.tbilisibus.data.Route
 import com.anagaf.tbilisibus.data.ShapePoint
-import com.anagaf.tbilisibus.data.calculateBusHeading
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
@@ -238,7 +237,7 @@ private fun BusMarker(bus: Bus, shapePoints: List<ShapePoint>, direction: Direct
         Direction.Forward -> R.drawable.red_arrow
         Direction.Backward -> R.drawable.blue_arrow
     }
-    val heading = calculateBusHeading(bus, shapePoints)
+    val heading = calculateBusHeading(bus.position, shapePoints)
     Timber.w("Bus heading is $heading")
     Marker(
         state = MarkerState(position = bus.position),
