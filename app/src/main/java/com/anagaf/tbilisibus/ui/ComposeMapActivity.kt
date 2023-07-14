@@ -1,12 +1,15 @@
 package com.anagaf.tbilisibus.ui
 
+import android.Manifest
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -52,6 +55,10 @@ import com.anagaf.tbilisibus.data.Direction
 import com.anagaf.tbilisibus.data.Route
 import com.anagaf.tbilisibus.data.ShapePoint
 import com.anagaf.tbilisibus.data.Stop
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.PermissionState
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
@@ -67,6 +74,7 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 object MarkerIcons {
     lateinit var bus: Map<Direction, BitmapDescriptor>
@@ -89,6 +97,7 @@ object MarkerIcons {
 class ComposeMapActivity : ComponentActivity() {
     private val viewModel: MapViewModel by viewModels()
 
+    @OptIn(ExperimentalPermissionsApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -100,6 +109,10 @@ class ComposeMapActivity : ComponentActivity() {
             val cameraPositionState = rememberCameraPositionState {
                 position = uiState.cameraPosition
             }
+
+            val locationPermissionState = rememberPermissionState(
+                android.Manifest.permission.ACCESS_FINE_LOCATION
+            )
 
             LaunchedEffect(uiState.cameraPosition) {
                 cameraPositionState.animate(
@@ -135,11 +148,19 @@ class ComposeMapActivity : ComponentActivity() {
                 }
             }
 
+            LaunchedEffect(locationPermissionState) {
+                Timber.d("Location permission status ${locationPermissionState.status}")
+                if (!locationPermissionState.status.isGranted) {
+                    locationPermissionState.launchPermissionRequest()
+                }
+            }
+
             Box(Modifier.fillMaxSize()) {
                 GoogleMapView(
                     route = uiState.route,
                     modifier = Modifier.matchParentSize(),
                     cameraPositionState = cameraPositionState,
+                    locationPermissionState = locationPermissionState,
                     onMapLoaded = {
                         isMapReady = true
                         MarkerIcons.init(this@ComposeMapActivity)
@@ -202,18 +223,20 @@ class ComposeMapActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun GoogleMapView(
     route: Route?,
     modifier: Modifier = Modifier,
     cameraPositionState: CameraPositionState,
+    locationPermissionState: PermissionState,
     onMapLoaded: () -> Unit = {},
 ) {
     GoogleMap(
         modifier = modifier,
         cameraPositionState = cameraPositionState,
         onMapLoaded = onMapLoaded,
-        properties = MapProperties(isMyLocationEnabled = true),
+        properties = MapProperties(isMyLocationEnabled = locationPermissionState.status.isGranted),
         uiSettings = MapUiSettings(zoomControlsEnabled = false, myLocationButtonEnabled = false),
     ) {
         if (route != null) {
