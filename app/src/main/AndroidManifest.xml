@@ -38,7 +38,7 @@
             android:value="${MAPS_API_KEY}" />
 
         <activity
-            android:name=".ui.ComposeMapActivity"
+            android:name=".ui.MapActivity"
             android:exported="true"
             android:label="@string/title_activity_compose_main"
             android:theme="@style/Theme.TbilisiBus">

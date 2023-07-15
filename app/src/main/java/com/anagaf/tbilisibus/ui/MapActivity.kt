@@ -1,15 +1,12 @@
 package com.anagaf.tbilisibus.ui
 
-import android.Manifest
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -94,7 +91,7 @@ object MarkerIcons {
 }
 
 @AndroidEntryPoint
-class ComposeMapActivity : ComponentActivity() {
+class MapActivity : ComponentActivity() {
     private val viewModel: MapViewModel by viewModels()
 
     @OptIn(ExperimentalPermissionsApi::class)
@@ -163,7 +160,7 @@ class ComposeMapActivity : ComponentActivity() {
                     locationPermissionState = locationPermissionState,
                     onMapLoaded = {
                         isMapReady = true
-                        MarkerIcons.init(this@ComposeMapActivity)
+                        MarkerIcons.init(this@MapActivity)
                         viewModel.onMapReady()
                     },
                 )
