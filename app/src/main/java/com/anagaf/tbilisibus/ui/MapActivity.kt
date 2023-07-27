@@ -1,12 +1,15 @@
 package com.anagaf.tbilisibus.ui
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -93,6 +96,12 @@ object MarkerIcons {
 @AndroidEntryPoint
 class MapActivity : ComponentActivity() {
     private val viewModel: MapViewModel by viewModels()
+
+    private val permissionRequestLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        Timber.i("Permission granted: $granted")
+    }
 
     @OptIn(ExperimentalPermissionsApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -181,7 +190,7 @@ class MapActivity : ComponentActivity() {
                     },
                     onReloadRouteButtonClicked = {
                         viewModel.onReloadRouteButtonClicked()
-                    }
+                    }, locationPermissionState.status.isGranted
                 )
 
                 if (uiState.routeNumberDialogRequired) {
@@ -217,6 +226,26 @@ class MapActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (!isLocationPermissionGranted()) {
+            requestLocationPermission()
+        }
+    }
+
+    private fun isLocationPermissionGranted(): Boolean =
+        ContextCompat.checkSelfPermission(
+            this,
+            android.Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
+    private fun requestLocationPermission() {
+        Timber.d("Requesting location permission")
+        permissionRequestLauncher.launch(
+            Manifest.permission.ACCESS_FINE_LOCATION
+        )
     }
 }
 
@@ -308,6 +337,7 @@ private fun MapControlButtons(
     onMyLocationButtonClicked: () -> Unit = {},
     onShowRouteButtonClicked: () -> Unit = {},
     onReloadRouteButtonClicked: () -> Unit = {},
+    myLocationButtonEnabled: Boolean
 ) {
     Column(
         modifier = Modifier
@@ -332,13 +362,15 @@ private fun MapControlButtons(
             )
         }
         MapControlButtonSpacer()
-        MapControlButton(
-            onClick = {
-                onMyLocationButtonClicked()
-            },
-            drawableId = R.drawable.my_location,
-            contentDescriptionId = R.string.my_location,
-        )
+        if (myLocationButtonEnabled) {
+            MapControlButton(
+                onClick = {
+                    onMyLocationButtonClicked()
+                },
+                drawableId = R.drawable.my_location,
+                contentDescriptionId = R.string.my_location,
+            )
+        }
         MapControlButtonSpacer()
         MapControlButton(
             onClick = {

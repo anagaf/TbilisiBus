@@ -22,7 +22,7 @@ class MapViewModel @Inject constructor(
     private val dataStore: AppDataStore,
     private val prefs: Preferences,
     private val timeProvider: TimeProvider,
-    private val locationProvider: LocationProvider
+    private val locationProvider: LocationProvider,
 ) : ViewModel() {
 
     companion object {
@@ -63,8 +63,13 @@ class MapViewModel @Inject constructor(
         }
     }
 
-    @SuppressLint("MissingPermission")
     fun onMyLocationButtonClicked() {
+        moveCameraToCurrentLocation()
+    }
+
+    private fun moveCameraToCurrentLocation() {
+        Timber.d("Moving camera to current location")
+
         viewModelScope.launch {
             _uiState.update {
                 it.copy(inProgress = true)
