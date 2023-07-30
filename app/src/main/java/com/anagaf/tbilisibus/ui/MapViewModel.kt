@@ -44,14 +44,10 @@ class MapViewModel @Inject constructor(
             _uiState.update { it.copy(cameraPosition = dataStore.lastCameraPosition!!) }
         }
 
-        if (_uiState.value.route == null) {
+        if (_uiState.value.route == null || shouldRequestRouteNumber()) {
             requestRouteNumber()
-        } else {
-            if (shouldRequestRouteNumber()) {
-                requestRouteNumber()
-            } else {
-                onRouteNumberChosen(_uiState.value.route!!.number)
-            }
+        } else if (shouldReloadRoute()) {
+            retrieveRoute(_uiState.value.route!!.number)
         }
     }
 
@@ -127,6 +123,11 @@ class MapViewModel @Inject constructor(
     private fun shouldRequestRouteNumber(): Boolean =
         dataStore.lastRouteNumberRequestTime?.let { time ->
             timeProvider.now - time > prefs.routeNumberTtl
+        } ?: true
+
+    private fun shouldReloadRoute(): Boolean =
+        dataStore.lastRouteNumberRequestTime?.let { time ->
+            timeProvider.now - time > prefs.routeTtl
         } ?: true
 
     private fun requestRouteNumber() {

@@ -77,6 +77,7 @@ private val kNewRoute =
 
 private val kCurrentTime = Instant.fromEpochSeconds(1000)
 
+private val kRouteNumberTtl = 5.minutes
 private val kRouteTtl = 1.minutes
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -113,7 +114,8 @@ class MapViewModelTest {
         viewModel =
             MapViewModel(routeProvider, appDataStore, preferences, timeProvider, locationProvider)
 
-        every { preferences.routeNumberTtl } returns kRouteTtl
+        every { preferences.routeNumberTtl } returns kRouteNumberTtl
+        every { preferences.routeTtl } returns kRouteTtl
     }
 
     private fun verifyUiState(expectedBuilder: () -> MapUiState) {
@@ -228,7 +230,7 @@ class MapViewModelTest {
         runTest(UnconfinedTestDispatcher()) {
             every { timeProvider.now } returnsMany listOf(
                 kCurrentTime,
-                kCurrentTime + kRouteTtl + 1.seconds
+                kCurrentTime + kRouteNumberTtl + 1.seconds
             )
 
             prepareRoute()
@@ -248,10 +250,10 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `reload route on map ready if route number TTL not passed`() =
+    fun `reload route on map ready if route TTL passed`() =
         runTest(UnconfinedTestDispatcher()) {
             val firstRequestTime = kCurrentTime
-            val secondRequestTime = firstRequestTime + kRouteTtl - 1.seconds
+            val secondRequestTime = firstRequestTime + kRouteTtl + 1.seconds
 
             every { timeProvider.now } returnsMany listOf(
                 firstRequestTime,
@@ -278,6 +280,36 @@ class MapViewModelTest {
             }
 
             coVerify(exactly = 2) { routeProvider.getRoute(kRouteNumber) }
+        }
+
+    @Test
+    fun `not reload route on map ready if route TTL not passed`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val firstRequestTime = kCurrentTime
+            val secondRequestTime = firstRequestTime + kRouteTtl - 1.seconds
+
+            every { timeProvider.now } returnsMany listOf(
+                firstRequestTime,
+                secondRequestTime,
+                secondRequestTime + 1.seconds
+            )
+
+            coEvery { routeProvider.getRoute(kRouteNumber) } returns kRoute
+
+            viewModel.onRouteNumberChosen(kRouteNumber)
+
+            every { appDataStore.lastRouteNumberRequestTime } returns firstRequestTime
+
+            viewModel.onMapReady()
+
+            verifyUiState {
+                MapUiState(
+                    cameraPosition = MapViewModel.kInitialCameraPosition,
+                    route = kRoute,
+                )
+            }
+
+            coVerify(exactly = 1) { routeProvider.getRoute(kRouteNumber) }
         }
 
     @Test
