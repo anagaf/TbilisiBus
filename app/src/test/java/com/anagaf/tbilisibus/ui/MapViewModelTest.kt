@@ -20,6 +20,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.datetime.Instant
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 
 private val kTestCameraPosition = CameraPosition.builder().target(LatLng(11.0, 12.0))
@@ -73,7 +75,7 @@ private val kNewRoute =
         )
     )
 
-private const val kCurrentTimeMillis = 123456789L
+private val kCurrentTime = Instant.fromEpochSeconds(1000)
 
 private val kRouteTtl = 1.minutes
 
@@ -160,14 +162,14 @@ class MapViewModelTest {
     @Test
     fun `retrieve route from provider on route number chosen`() =
         runTest(UnconfinedTestDispatcher()) {
-            val storedLastRouteNumberRequestTimeInMillis = slot<Long>()
+            val storedLastRouteNumberRequestTime = slot<Instant>()
 
             every {
-                appDataStore.lastRouteNumberRequestTimeInMillis =
-                    capture(storedLastRouteNumberRequestTimeInMillis)
+                appDataStore.lastRouteNumberRequestTime =
+                    capture(storedLastRouteNumberRequestTime)
             } returns Unit
 
-            every { timeProvider.currentTimeMillis } returns kCurrentTimeMillis
+            every { timeProvider.now } returns kCurrentTime
 
             coEvery { routeProvider.getRoute(kRouteNumber) } returns kRoute
 
@@ -184,18 +186,18 @@ class MapViewModelTest {
     @Test
     fun `reload current route`() =
         runTest(UnconfinedTestDispatcher()) {
-            val firstRequestTime = kCurrentTimeMillis
-            val secondRequestTime = firstRequestTime + 1
-            every { timeProvider.currentTimeMillis } returnsMany listOf(
+            val firstRequestTime = kCurrentTime
+            val secondRequestTime = firstRequestTime + 1.seconds
+            every { timeProvider.now } returnsMany listOf(
                 firstRequestTime,
                 secondRequestTime
             )
 
-            val storedLastRouteNumberRequestTimeInMillis = slot<Long>()
+            val storedLastRouteNumberRequestTime = slot<Instant>()
 
             every {
-                appDataStore.lastRouteNumberRequestTimeInMillis =
-                    capture(storedLastRouteNumberRequestTimeInMillis)
+                appDataStore.lastRouteNumberRequestTime =
+                    capture(storedLastRouteNumberRequestTime)
             } returns Unit
 
             coEvery { routeProvider.getRoute(kRouteNumber) } returnsMany listOf(
@@ -215,7 +217,7 @@ class MapViewModelTest {
 
             coVerify(exactly = 2) { routeProvider.getRoute(kRouteNumber) }
 
-            assertEquals(secondRequestTime, storedLastRouteNumberRequestTimeInMillis.captured)
+            assertEquals(secondRequestTime, storedLastRouteNumberRequestTime.captured)
         }
 
     @ParameterizedTest
@@ -224,15 +226,15 @@ class MapViewModelTest {
         lastRouteNumberRequestTimeAvailable: Boolean
     ) =
         runTest(UnconfinedTestDispatcher()) {
-            every { timeProvider.currentTimeMillis } returnsMany listOf(
-                kCurrentTimeMillis,
-                kCurrentTimeMillis + kRouteTtl.inWholeMilliseconds + 1
+            every { timeProvider.now } returnsMany listOf(
+                kCurrentTime,
+                kCurrentTime + kRouteTtl + 1.seconds
             )
 
             prepareRoute()
 
-            every { appDataStore.lastRouteNumberRequestTimeInMillis } returns
-                    if (lastRouteNumberRequestTimeAvailable) kCurrentTimeMillis else null
+            every { appDataStore.lastRouteNumberRequestTime } returns
+                    if (lastRouteNumberRequestTimeAvailable) kCurrentTime else null
 
             viewModel.onMapReady()
 
@@ -248,13 +250,13 @@ class MapViewModelTest {
     @Test
     fun `reload route on map ready if route number TTL not passed`() =
         runTest(UnconfinedTestDispatcher()) {
-            val firstRequestTime = kCurrentTimeMillis
-            val secondRequestTime = firstRequestTime + kRouteTtl.inWholeMilliseconds - 1
+            val firstRequestTime = kCurrentTime
+            val secondRequestTime = firstRequestTime + kRouteTtl - 1.seconds
 
-            every { timeProvider.currentTimeMillis } returnsMany listOf(
+            every { timeProvider.now } returnsMany listOf(
                 firstRequestTime,
                 secondRequestTime,
-                secondRequestTime + 1
+                secondRequestTime + 1.seconds
             )
 
             coEvery { routeProvider.getRoute(kRouteNumber) } returnsMany listOf(
@@ -264,7 +266,7 @@ class MapViewModelTest {
 
             viewModel.onRouteNumberChosen(kRouteNumber)
 
-            every { appDataStore.lastRouteNumberRequestTimeInMillis } returns firstRequestTime
+            every { appDataStore.lastRouteNumberRequestTime } returns firstRequestTime
 
             viewModel.onMapReady()
 
@@ -309,7 +311,7 @@ class MapViewModelTest {
     @Test
     fun `zoom to show whole route`() =
         runTest(UnconfinedTestDispatcher()) {
-            every { timeProvider.currentTimeMillis } returns kCurrentTimeMillis
+            every { timeProvider.now } returns kCurrentTime
 
             prepareRoute()
 

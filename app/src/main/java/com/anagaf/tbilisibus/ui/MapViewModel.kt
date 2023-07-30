@@ -1,6 +1,5 @@
 package com.anagaf.tbilisibus.ui
 
-import android.annotation.SuppressLint
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anagaf.tbilisibus.app.AppDataStore
@@ -125,14 +124,10 @@ class MapViewModel @Inject constructor(
         }
     }
 
-    private fun shouldRequestRouteNumber(): Boolean {
-        if (dataStore.lastRouteNumberRequestTimeInMillis == null) {
-            return true
-        }
-        val millisSinceLastRequest = timeProvider.currentTimeMillis -
-                dataStore.lastRouteNumberRequestTimeInMillis!!
-        return millisSinceLastRequest > prefs.routeNumberTtl.inWholeMilliseconds
-    }
+    private fun shouldRequestRouteNumber(): Boolean =
+        dataStore.lastRouteNumberRequestTime?.let { time ->
+            timeProvider.now - time > prefs.routeNumberTtl
+        } ?: true
 
     private fun requestRouteNumber() {
         _uiState.update {
@@ -150,7 +145,7 @@ class MapViewModel @Inject constructor(
             try {
                 val route = routeProvider.getRoute(routeNumber)
 
-                dataStore.lastRouteNumberRequestTimeInMillis = timeProvider.currentTimeMillis
+                dataStore.lastRouteNumberRequestTime = timeProvider.now
 
                 _uiState.update {
                     it.copy(

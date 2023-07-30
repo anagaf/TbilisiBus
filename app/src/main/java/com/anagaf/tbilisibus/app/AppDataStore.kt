@@ -4,11 +4,12 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import kotlinx.datetime.Instant
 import javax.inject.Inject
 
 interface AppDataStore {
     var lastCameraPosition: CameraPosition?
-    var lastRouteNumberRequestTimeInMillis: Long?
+    var lastRouteNumberRequestTime: Instant?
 }
 
 class AppDataStoreImpl @Inject constructor(context: Context) : AppDataStore {
@@ -19,7 +20,7 @@ class AppDataStoreImpl @Inject constructor(context: Context) : AppDataStore {
         const val LatKey = "lat"
         const val LonKey = "lon"
         const val ZoomKey = "zoom"
-        const val LastRouteNumberRequestTimeInMillisKey = "lastRouteNumberRequestTimeInMillis"
+        const val LastRouteNumberRequestEpochSecondsKey = "lastRouteNumberRequestTimeInMillis"
     }
 
     init {
@@ -45,12 +46,16 @@ class AppDataStoreImpl @Inject constructor(context: Context) : AppDataStore {
                 .putFloat(ZoomKey, value.zoom).apply()
         }
 
-    override var lastRouteNumberRequestTimeInMillis: Long?
-        get() = if (prefs.contains(LastRouteNumberRequestTimeInMillisKey))
-            prefs.getLong(LastRouteNumberRequestTimeInMillisKey, 0L)
-        else null
+    override var lastRouteNumberRequestTime: Instant?
+        get() = if (prefs.contains(LastRouteNumberRequestEpochSecondsKey)) {
+            val epochSeconds = prefs.getLong(LastRouteNumberRequestEpochSecondsKey, 0L)
+            Instant.fromEpochSeconds(epochSeconds)
+        } else {
+            null
+        }
         set(value) {
             assert(value != null)
-            prefs.edit().putLong(LastRouteNumberRequestTimeInMillisKey, value!!).apply()
+            prefs.edit().putLong(LastRouteNumberRequestEpochSecondsKey, value!!.epochSeconds)
+                .apply()
         }
 }

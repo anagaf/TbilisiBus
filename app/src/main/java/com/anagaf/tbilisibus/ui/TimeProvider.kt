@@ -1,10 +1,13 @@
 package com.anagaf.tbilisibus.ui
 
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+
 interface TimeProvider {
-    val currentTimeMillis: Long
+    val now: Instant
 }
 
 class SystemTimeProvider : TimeProvider {
-    override val currentTimeMillis: Long
-        get() = System.currentTimeMillis()
+    override val now: Instant
+        get() = Clock.System.now()
 }
