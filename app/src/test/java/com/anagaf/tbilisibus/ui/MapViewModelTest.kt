@@ -123,6 +123,18 @@ class MapViewModelTest {
         assertEquals(expected, viewModel.uiState.value)
     }
 
+    private fun makeRouteUiState(route: Route, location: LatLng? = null): MapUiState {
+        var bounds = route.bounds
+        if (location != null) {
+            bounds = bounds.including(location)
+        }
+        return MapUiState(
+            cameraPosition = MapViewModel.kInitialCameraPosition,
+            cameraBounds = bounds,
+            route = route
+        )
+    }
+
     private fun prepareRoute() {
         coEvery { routeProvider.getRoute(kRouteNumber) } returns (kRoute)
         viewModel.onRouteNumberChosen(kRouteNumber)
@@ -161,9 +173,18 @@ class MapViewModelTest {
         assert(arg.captured == kTestCameraPosition)
     }
 
-    @Test
-    fun `retrieve route from provider on route number chosen`() =
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `retrieve route from provider on route number chosen`(locationAvailable: Boolean) =
         runTest(UnconfinedTestDispatcher()) {
+            val location = LatLng(6.0, 4.0)
+
+            if (locationAvailable) {
+                coEvery { locationProvider.getLastLocation() } returns location
+            } else {
+                coEvery { locationProvider.getLastLocation() } throws RuntimeException("Location is not available")
+            }
+
             val storedLastRouteNumberRequestTime = slot<Instant>()
 
             every {
@@ -178,10 +199,7 @@ class MapViewModelTest {
             viewModel.onRouteNumberChosen(kRouteNumber)
 
             verifyUiState {
-                MapUiState(
-                    cameraPosition = MapViewModel.kInitialCameraPosition,
-                    route = kRoute
-                )
+                makeRouteUiState(kRoute, if (locationAvailable) location else null)
             }
         }
 
@@ -211,10 +229,7 @@ class MapViewModelTest {
             viewModel.onReloadRouteButtonClicked()
 
             verifyUiState {
-                MapUiState(
-                    cameraPosition = MapViewModel.kInitialCameraPosition,
-                    route = kNewRoute
-                )
+                makeRouteUiState(kNewRoute)
             }
 
             coVerify(exactly = 2) { routeProvider.getRoute(kRouteNumber) }
@@ -241,11 +256,7 @@ class MapViewModelTest {
             viewModel.onMapReady()
 
             verifyUiState {
-                MapUiState(
-                    cameraPosition = MapViewModel.kInitialCameraPosition,
-                    route = kRoute,
-                    routeNumberDialogRequired = true
-                )
+                makeRouteUiState(kRoute).copy(routeNumberDialogRequired = true)
             }
         }
 
@@ -273,10 +284,7 @@ class MapViewModelTest {
             viewModel.onMapReady()
 
             verifyUiState {
-                MapUiState(
-                    cameraPosition = MapViewModel.kInitialCameraPosition,
-                    route = kNewRoute,
-                )
+                makeRouteUiState(kNewRoute)
             }
 
             coVerify(exactly = 2) { routeProvider.getRoute(kRouteNumber) }
@@ -303,10 +311,7 @@ class MapViewModelTest {
             viewModel.onMapReady()
 
             verifyUiState {
-                MapUiState(
-                    cameraPosition = MapViewModel.kInitialCameraPosition,
-                    route = kRoute,
-                )
+                makeRouteUiState(kRoute)
             }
 
             coVerify(exactly = 1) { routeProvider.getRoute(kRouteNumber) }
@@ -350,11 +355,7 @@ class MapViewModelTest {
             viewModel.onZoomToShowRouteButtonClicked()
 
             verifyUiState {
-                MapUiState(
-                    cameraPosition = MapViewModel.kInitialCameraPosition,
-                    route = kRoute,
-                    cameraBounds = kRoute.bounds
-                )
+                makeRouteUiState(kRoute)
             }
         }
 

@@ -7,6 +7,7 @@ import com.anagaf.tbilisibus.app.Preferences
 import com.anagaf.tbilisibus.data.RouteProvider
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -145,13 +146,18 @@ class MapViewModel @Inject constructor(
 
             try {
                 val route = routeProvider.getRoute(routeNumber)
-
                 dataStore.lastRouteNumberRequestTime = timeProvider.now
+
+                var bounds = route.bounds
+                getLocationIfAvailable()?.let { location ->
+                    bounds = bounds.including(location)
+                }
 
                 _uiState.update {
                     it.copy(
                         inProgress = false,
                         route = route,
+                        cameraBounds = bounds
                     )
                 }
             } catch (ex: Exception) {
@@ -159,8 +165,6 @@ class MapViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         inProgress = false,
-                        // TODO: take message from resources
-                        //errorMessage = "Route request failed: ${ex.message}"
                         error = MapUiState.Error.RouteNotAvailable
                     )
                 }
@@ -178,5 +182,12 @@ class MapViewModel @Inject constructor(
         _uiState.update {
             it.copy(error = null)
         }
+    }
+
+    suspend fun getLocationIfAvailable(): LatLng? = try {
+        locationProvider.getLastLocation()
+    } catch (ex: Exception) {
+        Timber.d("User location is not available: ${ex.message}")
+        null
     }
 }
