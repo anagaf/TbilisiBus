@@ -9,12 +9,17 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 @HiltViewModel
 class MapViewModel @Inject constructor(
@@ -40,6 +45,8 @@ class MapViewModel @Inject constructor(
 
     val uiState = _uiState.asStateFlow()
 
+    var routeUpdateJob: Job? = null
+
     fun onMapReady() {
         if (dataStore.lastCameraPosition != null) {
             _uiState.update { it.copy(cameraPosition = dataStore.lastCameraPosition!!) }
@@ -61,6 +68,14 @@ class MapViewModel @Inject constructor(
 
     fun onMyLocationButtonClicked() {
         moveCameraToCurrentLocation()
+    }
+
+    fun onActivityStart() {
+        startPeriodicRouteUpdate()
+    }
+
+    fun onActivityStop() {
+        stopPeriodicRouteUpdate()
     }
 
     private fun moveCameraToCurrentLocation() {
@@ -160,6 +175,8 @@ class MapViewModel @Inject constructor(
                         cameraBounds = bounds
                     )
                 }
+
+                startPeriodicRouteUpdate()
             } catch (ex: Exception) {
                 Timber.e(ex, "Route request failed")
                 _uiState.update {
@@ -170,6 +187,47 @@ class MapViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun startPeriodicRouteUpdate() {
+        stopPeriodicRouteUpdate()
+        routeUpdateJob = viewModelScope.launch {
+            while (true) {
+                delay(prefs.routeReloadPeriod)
+                doRouteUpdateIfPossible()
+            }
+        }
+    }
+
+    private suspend fun doRouteUpdateIfPossible() =
+        uiState.value.route?.number?.let { routeNumber ->
+            if (uiState.value.inProgress) {
+                return@let
+            }
+
+            Timber.d("Periodic route $routeNumber update")
+
+            try {
+                val route = routeProvider.getRoute(routeNumber)
+                dataStore.lastRouteNumberRequestTime = timeProvider.now
+
+                _uiState.update {
+                    it.copy(
+                        route = route,
+                    )
+                }
+            } catch (ex: Exception) {
+                Timber.e(ex, "Route request failed")
+            }
+        }
+
+    private fun stopPeriodicRouteUpdate() {
+        routeUpdateJob?.apply {
+            if (isActive) {
+                cancel()
+            }
+        }
+        routeUpdateJob = null
     }
 
     fun onChooseRouteButtonClicked() {
@@ -184,7 +242,7 @@ class MapViewModel @Inject constructor(
         }
     }
 
-    suspend fun getLocationIfAvailable(): LatLng? = try {
+    private suspend fun getLocationIfAvailable(): LatLng? = try {
         locationProvider.getLastLocation()
     } catch (ex: Exception) {
         Timber.d("User location is not available: ${ex.message}")

@@ -2,6 +2,7 @@ package com.anagaf.tbilisibus.app
 
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 interface Preferences {
     /**
@@ -13,9 +14,15 @@ interface Preferences {
      * Route is reloaded if it's older than this duration.
      */
     val routeTtl: Duration
+
+    /**
+     * Route reload period.
+     */
+    val routeReloadPeriod: Duration
 }
 
 class PreferencesImpl : Preferences {
     override val routeNumberTtl: Duration = 15.minutes
     override val routeTtl: Duration = 1.minutes
+    override val routeReloadPeriod: Duration = 15.seconds
 }

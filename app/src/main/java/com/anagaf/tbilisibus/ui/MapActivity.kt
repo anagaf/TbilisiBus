@@ -233,6 +233,12 @@ class MapActivity : ComponentActivity() {
         if (!isLocationPermissionGranted()) {
             requestLocationPermission()
         }
+        viewModel.onActivityStart()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        viewModel.onActivityStop()
     }
 
     private fun isLocationPermissionGranted(): Boolean =
