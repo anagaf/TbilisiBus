@@ -31,8 +31,8 @@ jobs:
 
         - name: Access MAP_API_KEY
           env:
-            MAP_API_KEY: $
-          run: echo MAP_API_KEY=\"$MAP_API_KEY\"
+            map_api_key: ${{ secrets.MAP_API_KEY }}
+          run: echo MAP_API_KEY=\"$map_api_key\"
 
         - run: echo "Building Debug APK."  
         - name: Build with Gradle
