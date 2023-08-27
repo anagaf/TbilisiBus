@@ -9,6 +9,7 @@ import com.anagaf.tbilisibus.data.ShapePoint
 import com.anagaf.tbilisibus.data.Stop
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -16,12 +17,15 @@ import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.AfterEachCallback
@@ -78,6 +82,8 @@ private val kNewRoute =
 private val kCurrentTime = Instant.fromEpochSeconds(1000)
 
 private val kRouteNumberTtl = 5.minutes
+private val kRouteReloadPeriod = 1.seconds
+
 private val kRouteTtl = 1.minutes
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -115,6 +121,7 @@ class MapViewModelTest {
             MapViewModel(routeProvider, appDataStore, preferences, timeProvider, locationProvider)
 
         every { preferences.routeNumberTtl } returns kRouteNumberTtl
+        every { preferences.routeReloadPeriod } returns kRouteReloadPeriod
         every { preferences.routeTtl } returns kRouteTtl
     }
 
@@ -123,17 +130,20 @@ class MapViewModelTest {
         assertEquals(expected, viewModel.uiState.value)
     }
 
-    private fun makeRouteUiState(route: Route, location: LatLng? = null): MapUiState {
+    private fun makeBounds(route: Route, location: LatLng? = null): LatLngBounds {
         var bounds = route.bounds
         if (location != null) {
             bounds = bounds.including(location)
         }
-        return MapUiState(
+        return bounds
+    }
+
+    private fun makeRouteUiState(route: Route, location: LatLng? = null) =
+        MapUiState(
             cameraPosition = MapViewModel.kInitialCameraPosition,
-            cameraBounds = bounds,
+            cameraBounds = makeBounds(route, location),
             route = route
         )
-    }
 
     private fun prepareRoute() {
         coEvery { routeProvider.getRoute(kRouteNumber) } returns (kRoute)
@@ -201,6 +211,8 @@ class MapViewModelTest {
             verifyUiState {
                 makeRouteUiState(kRoute, if (locationAvailable) location else null)
             }
+
+            viewModel.onActivityStop()
         }
 
     @Test
@@ -235,6 +247,8 @@ class MapViewModelTest {
             coVerify(exactly = 2) { routeProvider.getRoute(kRouteNumber) }
 
             assertEquals(secondRequestTime, storedLastRouteNumberRequestTime.captured)
+
+            viewModel.onActivityStop()
         }
 
     @ParameterizedTest
@@ -258,6 +272,8 @@ class MapViewModelTest {
             verifyUiState {
                 makeRouteUiState(kRoute).copy(routeNumberDialogRequired = true)
             }
+
+            viewModel.onActivityStop()
         }
 
     @Test
@@ -288,6 +304,8 @@ class MapViewModelTest {
             }
 
             coVerify(exactly = 2) { routeProvider.getRoute(kRouteNumber) }
+
+            viewModel.onActivityStop()
         }
 
     @Test
@@ -315,6 +333,8 @@ class MapViewModelTest {
             }
 
             coVerify(exactly = 1) { routeProvider.getRoute(kRouteNumber) }
+
+            viewModel.onActivityStop()
         }
 
     @Test
@@ -357,6 +377,8 @@ class MapViewModelTest {
             verifyUiState {
                 makeRouteUiState(kRoute)
             }
+
+            viewModel.onActivityStop()
         }
 
     @Test
@@ -409,4 +431,48 @@ class MapViewModelTest {
             )
         }
     }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `reload route periodically`(routeRequestSuccess: Boolean) =
+        runTest(UnconfinedTestDispatcher()) {
+            every { timeProvider.now } returns kCurrentTime
+
+            coEvery { routeProvider.getRoute(kRouteNumber) } returns kRoute
+
+            viewModel.onRouteNumberChosen(kRouteNumber)
+
+            val startTime = Clock.System.now()
+            val expectedCount = 3
+            val timeout = kRouteReloadPeriod * (expectedCount + 1)
+            var count = 0
+
+            coEvery { routeProvider.getRoute(kRouteNumber) } answers {
+                ++count
+                if (!routeRequestSuccess) {
+                    throw RuntimeException("Test")
+                }
+                kNewRoute
+            }
+
+            viewModel.onActivityStart()
+
+            while (count < expectedCount && Clock.System.now() - startTime < timeout) {
+                delay(1.seconds)
+            }
+
+            viewModel.onActivityStop()
+
+            assertTrue(count == expectedCount)
+
+            val expectedUtState = MapUiState(
+                cameraPosition = MapViewModel.kInitialCameraPosition,
+                // route periodic updates don't cause bounds changes
+                cameraBounds = makeBounds(kRoute),
+                // route periodic updates failures are just ignored
+                route = if (routeRequestSuccess) kNewRoute else kRoute
+            )
+
+            assertEquals(expectedUtState, viewModel.uiState.value)
+        }
 }
