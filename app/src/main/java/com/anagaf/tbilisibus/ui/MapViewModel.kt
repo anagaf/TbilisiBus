@@ -35,6 +35,7 @@ class MapViewModel @Inject constructor(
             .target(LatLng(41.7225, 44.7925)) // Tbilisi center
             .zoom(12f)
             .build()
+        val kMyLocationZoom = 15f
     }
 
     private val _uiState = MutableStateFlow(
@@ -79,21 +80,18 @@ class MapViewModel @Inject constructor(
     }
 
     private fun moveCameraToCurrentLocation() {
-        Timber.d("Moving camera to current location")
-
         viewModelScope.launch {
             _uiState.update {
                 it.copy(inProgress = true)
             }
             try {
                 val location = locationProvider.getLastLocation()
-                val zoom = _uiState.value.cameraPosition.zoom
                 _uiState.update {
                     it.copy(
                         inProgress = false,
                         cameraPosition = CameraPosition.Builder(it.cameraPosition)
                             .target(LatLng(location.latitude, location.longitude))
-                            .zoom(zoom)
+                            .zoom(kMyLocationZoom)
                             .build()
                     )
                 }
