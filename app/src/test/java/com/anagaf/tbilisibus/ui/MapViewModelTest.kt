@@ -400,7 +400,7 @@ class MapViewModelTest {
             MapUiState(
                 cameraPosition = CameraPosition.builder()
                     .target(kTestCameraPosition.target)
-                    .zoom(MapViewModel.kInitialCameraPosition.zoom)
+                    .zoom(MapViewModel.kMyLocationZoom)
                     .build(),
             )
         }

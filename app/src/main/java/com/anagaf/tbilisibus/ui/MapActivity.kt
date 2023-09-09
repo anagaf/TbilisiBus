@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -82,13 +83,13 @@ object MarkerIcons {
 
     fun init(context: Context) {
         bus = mapOf(
-            Direction.Forward to makeMarkerDrawable(context, R.drawable.red_arrow),
-            Direction.Backward to makeMarkerDrawable(context, R.drawable.blue_arrow)
+            Direction.Forward to makeMarkerDrawable(context, R.drawable.forward_bus_arrow),
+            Direction.Backward to makeMarkerDrawable(context, R.drawable.backward_bus_arrow)
         )
 
         stop = mapOf(
-            Direction.Forward to makeMarkerDrawable(context, R.drawable.red_stop),
-            Direction.Backward to makeMarkerDrawable(context, R.drawable.blue_stop)
+            Direction.Forward to makeMarkerDrawable(context, R.drawable.forward_stop),
+            Direction.Backward to makeMarkerDrawable(context, R.drawable.backward_stop)
         )
     }
 }
@@ -329,10 +330,10 @@ fun StopMarker(position: LatLng, direction: Direction) {
 @Composable
 fun RouteShape(shapePoints: List<ShapePoint>, direction: Direction) {
     val color = when (direction) {
-        Direction.Forward -> Color.Red
-        Direction.Backward -> Color.Blue
+        Direction.Forward -> LocalContext.current.getColor(R.color.forward_route)
+        Direction.Backward -> LocalContext.current.getColor(R.color.backward_route)
     }
-    Polyline(points = shapePoints.map { it.position }, color = color)
+    Polyline(points = shapePoints.map { it.position }, color = Color(color))
 }
 
 @Composable
