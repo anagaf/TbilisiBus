@@ -19,7 +19,7 @@ class RouteInfoResponseParserTest {
             mapper.factory.createParser(stream),
             mapper.deserializationContext
         )
-        val expectedRouteInfo = RouteInfo(
+        val expectedRouteInfo = DirectionRouteInfo(
             stops = listOf(
                 Stop(LatLng(41.73948915307085, 44.96345490217209)),
                 Stop(LatLng(41.73815219765541, 44.96386528015137)),

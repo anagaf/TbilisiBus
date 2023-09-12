@@ -22,6 +22,6 @@ class BusesResponseParserTest {
             Bus(LatLng(41.76619056790743, 44.77884267730354)),
             Bus(LatLng(41.74894996470203, 44.777173414131894)),
         )
-        assertEquals(Buses(expectedBuses), buses)
+        assertEquals(DirectionBuses(expectedBuses), buses)
     }
 }

@@ -10,13 +10,13 @@ interface TtcRetrofitService {
     fun getBuses(
         @Query("routeNumber") number: Int,
         @Query("forward") forward: Int
-    ): Call<Buses>
+    ): Call<DirectionBuses>
 
     @GET("otp/routers/ttc/routeInfo?type=bus")
     fun getRouteInfo(
         @Query("routeNumber") number: Int,
         @Query("forward") forward: Int
-    ): Call<RouteInfo>
+    ): Call<DirectionRouteInfo>
 
 
 }

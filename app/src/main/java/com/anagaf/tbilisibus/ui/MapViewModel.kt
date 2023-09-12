@@ -4,13 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anagaf.tbilisibus.app.AppDataStore
 import com.anagaf.tbilisibus.app.Preferences
-import com.anagaf.tbilisibus.data.RouteProvider
+import com.anagaf.tbilisibus.data.RouteRepository
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.LatLngBounds
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,12 +16,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 @HiltViewModel
 class MapViewModel @Inject constructor(
-    private val routeProvider: RouteProvider,
+    private val routeRepository: RouteRepository,
     private val dataStore: AppDataStore,
     private val prefs: Preferences,
     private val timeProvider: TimeProvider,
@@ -158,7 +154,7 @@ class MapViewModel @Inject constructor(
             }
 
             try {
-                val route = routeProvider.getRoute(routeNumber)
+                val route = routeRepository.getRoute(routeNumber)
                 dataStore.lastRouteNumberRequestTime = timeProvider.now
 
                 var bounds = route.bounds
@@ -206,7 +202,7 @@ class MapViewModel @Inject constructor(
             Timber.d("Periodic route $routeNumber update")
 
             try {
-                val route = routeProvider.getRoute(routeNumber)
+                val route = routeRepository.getRoute(routeNumber)
                 dataStore.lastRouteNumberRequestTime = timeProvider.now
 
                 _uiState.update {

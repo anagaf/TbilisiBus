@@ -6,12 +6,16 @@ import com.anagaf.tbilisibus.app.AppDataStore
 import com.anagaf.tbilisibus.app.AppDataStoreImpl
 import com.anagaf.tbilisibus.app.Preferences
 import com.anagaf.tbilisibus.app.PreferencesImpl
-import com.anagaf.tbilisibus.data.ttc.Buses
-import com.anagaf.tbilisibus.data.RouteProvider
+import com.anagaf.tbilisibus.data.Bus
+import com.anagaf.tbilisibus.data.RouteInfoCacheImpl
+import com.anagaf.tbilisibus.data.RouteRepository
+import com.anagaf.tbilisibus.data.RouteRepositoryImpl
 import com.anagaf.tbilisibus.data.ttc.BusesResponseParser
+import com.anagaf.tbilisibus.data.ttc.DirectionBuses
 import com.anagaf.tbilisibus.data.ttc.RouteInfoResponseParser
 import com.anagaf.tbilisibus.data.ttc.TtcRetrofitService
-import com.anagaf.tbilisibus.data.ttc.TtcRouteProvider
+import com.anagaf.tbilisibus.data.ttc.TtcBusesDataSource
+import com.anagaf.tbilisibus.data.ttc.TtcRouteInfoDataSource
 import com.anagaf.tbilisibus.ui.LocationProvider
 import com.anagaf.tbilisibus.ui.SystemLocationProvider
 import com.anagaf.tbilisibus.ui.SystemTimeProvider
@@ -44,9 +48,9 @@ internal object ViewModelHiltModule {
         val objectMapper = ObjectMapper()
 
         val objectMapperModule = SimpleModule()
-        objectMapperModule.addDeserializer(Buses::class.java, BusesResponseParser())
+        objectMapperModule.addDeserializer(DirectionBuses::class.java, BusesResponseParser())
         objectMapperModule.addDeserializer(
-            com.anagaf.tbilisibus.data.ttc.RouteInfo::class.java,
+            com.anagaf.tbilisibus.data.ttc.DirectionRouteInfo::class.java,
             RouteInfoResponseParser()
         )
         objectMapper.registerModule(objectMapperModule)
@@ -90,8 +94,12 @@ internal object ViewModelHiltModule {
 
     @Provides
     @ViewModelScoped
-    fun provideDataProvider(ttcRetrofitService: TtcRetrofitService): RouteProvider =
-        TtcRouteProvider(ttcRetrofitService)
+    fun provideRouteRepository(ttcRetrofitService: TtcRetrofitService): RouteRepository {
+        val busesDataSource = TtcBusesDataSource(ttcRetrofitService)
+        val routeInfoDataSource = TtcRouteInfoDataSource(ttcRetrofitService)
+        val routeInfoCache = RouteInfoCacheImpl()
+        return RouteRepositoryImpl(busesDataSource, routeInfoDataSource, routeInfoCache)
+    }
 
     @Provides
     @ViewModelScoped

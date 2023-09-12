@@ -8,12 +8,12 @@ import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.JsonNode
 import com.google.android.gms.maps.model.LatLng
 
-class BusesResponseParser : JsonDeserializer<Buses>() {
+class BusesResponseParser : JsonDeserializer<DirectionBuses>() {
 
     override fun deserialize(
         parser: JsonParser?,
         ctxt: DeserializationContext?
-    ): Buses {
+    ): DirectionBuses {
         val buses = mutableListOf<Bus>()
 
         val rootNode: JsonNode = parser?.codec?.readTree(parser)
@@ -22,7 +22,7 @@ class BusesResponseParser : JsonDeserializer<Buses>() {
         busArray.elements().forEach {
             buses.add(parseBus(it))
         }
-        return Buses(buses)
+        return DirectionBuses(buses)
     }
 
     private fun parseBus(node: JsonNode): Bus {

@@ -9,15 +9,17 @@ import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.JsonNode
 import com.google.android.gms.maps.model.LatLng
 
-class RouteInfoResponseParser : JsonDeserializer<RouteInfo>() {
+class RouteInfoResponseParser : JsonDeserializer<DirectionRouteInfo>() {
 
     override fun deserialize(
         parser: JsonParser?,
         ctxt: DeserializationContext?
-    ): RouteInfo {
+    ): DirectionRouteInfo {
         val rootNode: JsonNode = parser?.codec?.readTree(parser)
             ?: throw JsonParseException(parser, "Cannot access root node")
-        return RouteInfo(stops = parseStops(rootNode), shapePoints = parseShapePoints(rootNode))
+        val stops = parseStops(rootNode)
+        val shapePoints = parseShapePoints(rootNode)
+        return DirectionRouteInfo(stops, shapePoints)
     }
 
     private fun parseStops(rootNode: JsonNode): List<Stop> {

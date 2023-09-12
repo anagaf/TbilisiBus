@@ -4,7 +4,7 @@ import com.anagaf.tbilisibus.app.AppDataStore
 import com.anagaf.tbilisibus.app.Preferences
 import com.anagaf.tbilisibus.data.Bus
 import com.anagaf.tbilisibus.data.Route
-import com.anagaf.tbilisibus.data.RouteProvider
+import com.anagaf.tbilisibus.data.RouteRepository
 import com.anagaf.tbilisibus.data.ShapePoint
 import com.anagaf.tbilisibus.data.Stop
 import com.google.android.gms.maps.model.CameraPosition
@@ -90,7 +90,7 @@ private val kRouteTtl = 1.minutes
 @ExtendWith(MapViewModelTest.TraceUnitExtension::class)
 class MapViewModelTest {
 
-    private val routeProvider: RouteProvider = mockk()
+    private val routeRepository: RouteRepository = mockk()
 
     private val appDataStore: AppDataStore = mockk(relaxUnitFun = true)
 
@@ -118,7 +118,7 @@ class MapViewModelTest {
     fun setUp() {
         every { appDataStore.lastCameraPosition } returns null
         viewModel =
-            MapViewModel(routeProvider, appDataStore, preferences, timeProvider, locationProvider)
+            MapViewModel(routeRepository, appDataStore, preferences, timeProvider, locationProvider)
 
         every { preferences.routeNumberTtl } returns kRouteNumberTtl
         every { preferences.routeReloadPeriod } returns kRouteReloadPeriod
@@ -146,7 +146,7 @@ class MapViewModelTest {
         )
 
     private fun prepareRoute() {
-        coEvery { routeProvider.getRoute(kRouteNumber) } returns (kRoute)
+        coEvery { routeRepository.getRoute(kRouteNumber) } returns (kRoute)
         viewModel.onRouteNumberChosen(kRouteNumber)
     }
 
@@ -204,7 +204,7 @@ class MapViewModelTest {
 
             every { timeProvider.now } returns kCurrentTime
 
-            coEvery { routeProvider.getRoute(kRouteNumber) } returns kRoute
+            coEvery { routeRepository.getRoute(kRouteNumber) } returns kRoute
 
             viewModel.onRouteNumberChosen(kRouteNumber)
 
@@ -232,7 +232,7 @@ class MapViewModelTest {
                     capture(storedLastRouteNumberRequestTime)
             } returns Unit
 
-            coEvery { routeProvider.getRoute(kRouteNumber) } returnsMany listOf(
+            coEvery { routeRepository.getRoute(kRouteNumber) } returnsMany listOf(
                 kRoute,
                 kNewRoute
             )
@@ -244,7 +244,7 @@ class MapViewModelTest {
                 makeRouteUiState(kNewRoute)
             }
 
-            coVerify(exactly = 2) { routeProvider.getRoute(kRouteNumber) }
+            coVerify(exactly = 2) { routeRepository.getRoute(kRouteNumber) }
 
             assertEquals(secondRequestTime, storedLastRouteNumberRequestTime.captured)
 
@@ -288,7 +288,7 @@ class MapViewModelTest {
                 secondRequestTime + 1.seconds
             )
 
-            coEvery { routeProvider.getRoute(kRouteNumber) } returnsMany listOf(
+            coEvery { routeRepository.getRoute(kRouteNumber) } returnsMany listOf(
                 kRoute,
                 kNewRoute
             )
@@ -303,7 +303,7 @@ class MapViewModelTest {
                 makeRouteUiState(kNewRoute)
             }
 
-            coVerify(exactly = 2) { routeProvider.getRoute(kRouteNumber) }
+            coVerify(exactly = 2) { routeRepository.getRoute(kRouteNumber) }
 
             viewModel.onActivityStop()
         }
@@ -320,7 +320,7 @@ class MapViewModelTest {
                 secondRequestTime + 1.seconds
             )
 
-            coEvery { routeProvider.getRoute(kRouteNumber) } returns kRoute
+            coEvery { routeRepository.getRoute(kRouteNumber) } returns kRoute
 
             viewModel.onRouteNumberChosen(kRouteNumber)
 
@@ -332,7 +332,7 @@ class MapViewModelTest {
                 makeRouteUiState(kRoute)
             }
 
-            coVerify(exactly = 1) { routeProvider.getRoute(kRouteNumber) }
+            coVerify(exactly = 1) { routeRepository.getRoute(kRouteNumber) }
 
             viewModel.onActivityStop()
         }
@@ -342,7 +342,7 @@ class MapViewModelTest {
         runTest(UnconfinedTestDispatcher()) {
             val ex = RuntimeException("Test exception")
 
-            coEvery { routeProvider.getRoute(kRouteNumber) } throws ex
+            coEvery { routeRepository.getRoute(kRouteNumber) } throws ex
 
             viewModel.onRouteNumberChosen(kRouteNumber)
 
@@ -438,7 +438,7 @@ class MapViewModelTest {
         runTest(UnconfinedTestDispatcher()) {
             every { timeProvider.now } returns kCurrentTime
 
-            coEvery { routeProvider.getRoute(kRouteNumber) } returns kRoute
+            coEvery { routeRepository.getRoute(kRouteNumber) } returns kRoute
 
             viewModel.onRouteNumberChosen(kRouteNumber)
 
@@ -447,7 +447,7 @@ class MapViewModelTest {
             val timeout = kRouteReloadPeriod * (expectedCount + 1)
             var count = 0
 
-            coEvery { routeProvider.getRoute(kRouteNumber) } answers {
+            coEvery { routeRepository.getRoute(kRouteNumber) } answers {
                 ++count
                 if (!routeRequestSuccess) {
                     throw RuntimeException("Test")
