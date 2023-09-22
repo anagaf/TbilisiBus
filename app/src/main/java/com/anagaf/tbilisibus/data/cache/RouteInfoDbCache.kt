@@ -1,9 +1,6 @@
-package com.anagaf.tbilisibus.data
+package com.anagaf.tbilisibus.data.cache
 
-interface RouteInfoCache {
-    fun getRouteInfo(routeNumber: Int): RouteInfo?
-    fun setRouteInfo(routeNumber: Int, routeInfo: RouteInfo)
-}
+import com.anagaf.tbilisibus.data.RouteInfo
 
 class RouteInfoCacheImpl: RouteInfoCache {
     override fun getRouteInfo(routeNumber: Int): RouteInfo? {

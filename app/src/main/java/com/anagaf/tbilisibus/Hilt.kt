@@ -6,8 +6,7 @@ import com.anagaf.tbilisibus.app.AppDataStore
 import com.anagaf.tbilisibus.app.AppDataStoreImpl
 import com.anagaf.tbilisibus.app.Preferences
 import com.anagaf.tbilisibus.app.PreferencesImpl
-import com.anagaf.tbilisibus.data.Bus
-import com.anagaf.tbilisibus.data.RouteInfoCacheImpl
+import com.anagaf.tbilisibus.data.cache.RouteInfoCacheImpl
 import com.anagaf.tbilisibus.data.RouteRepository
 import com.anagaf.tbilisibus.data.RouteRepositoryImpl
 import com.anagaf.tbilisibus.data.ttc.BusesResponseParser
