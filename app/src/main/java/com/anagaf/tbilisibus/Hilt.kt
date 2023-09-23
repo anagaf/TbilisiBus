@@ -9,6 +9,7 @@ import com.anagaf.tbilisibus.app.PreferencesImpl
 import com.anagaf.tbilisibus.data.cache.RouteInfoCacheImpl
 import com.anagaf.tbilisibus.data.RouteRepository
 import com.anagaf.tbilisibus.data.RouteRepositoryImpl
+import com.anagaf.tbilisibus.data.cache.CacheDatabase
 import com.anagaf.tbilisibus.data.ttc.BusesResponseParser
 import com.anagaf.tbilisibus.data.ttc.DirectionBuses
 import com.anagaf.tbilisibus.data.ttc.RouteInfoResponseParser
@@ -93,10 +94,14 @@ internal object ViewModelHiltModule {
 
     @Provides
     @ViewModelScoped
-    fun provideRouteRepository(ttcRetrofitService: TtcRetrofitService): RouteRepository {
+    fun provideRouteRepository(
+        app: Application,
+        ttcRetrofitService: TtcRetrofitService
+    ): RouteRepository {
         val busesDataSource = TtcBusesDataSource(ttcRetrofitService)
         val routeInfoDataSource = TtcRouteInfoDataSource(ttcRetrofitService)
-        val routeInfoCache = RouteInfoCacheImpl()
+        val routeInfoCache =
+            RouteInfoCacheImpl(CacheDatabase.getDatabase(app.applicationContext).routeInfoDao())
         return RouteRepositoryImpl(busesDataSource, routeInfoDataSource, routeInfoCache)
     }
 

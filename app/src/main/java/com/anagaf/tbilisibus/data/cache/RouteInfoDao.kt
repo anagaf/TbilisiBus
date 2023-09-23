@@ -6,18 +6,31 @@ import androidx.room.Query
 import androidx.room.Transaction
 
 @Dao
-interface RouteInfoDao {
+abstract class RouteInfoDao {
 
     @Transaction
     @Query("SELECT * FROM RouteInfo WHERE routeNumber = :routeNumber")
-    fun get(routeNumber: Int): RouteInfoWithStopsAndShapePointsEntity
+    abstract fun get(routeNumber: Int): RouteInfoWithStopsAndShapePointsEntity
 
     @Transaction
     @Query("DELETE FROM RouteInfo WHERE routeNumber = :routeNumber")
-    fun delete(routeNumber: Int)
+    abstract fun delete(routeNumber: Int)
+
+    @Insert
+    abstract fun insertRouteInfo(routeInfo: RouteInfoEntity)
+
+    @Insert
+    abstract fun insertStops(stops: List<StopEntity>)
+
+    @Insert
+    abstract fun insertShapePoints(shapePoint: List<ShapePointEntity>)
 
     @Transaction
-    @Insert
-    fun insert(routeInfo: RouteInfoWithStopsAndShapePointsEntity)
-
+    @Query("")
+    fun insert(routeInfo: RouteInfoWithStopsAndShapePointsEntity) {
+        delete(routeInfo.routeInfo.routeNumber)
+        insertRouteInfo(routeInfo.routeInfo)
+        insertStops(routeInfo.stops)
+        insertShapePoints(routeInfo.shapePoints)
+    }
 }

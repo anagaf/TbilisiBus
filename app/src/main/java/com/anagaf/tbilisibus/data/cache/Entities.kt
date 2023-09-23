@@ -6,15 +6,13 @@ import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 import androidx.room.Relation
 import com.anagaf.tbilisibus.data.Direction
-import kotlin.time.ExperimentalTime
-import kotlin.time.TimeMark
 
 @Entity(tableName = "RouteInfo")
-@OptIn(ExperimentalTime::class)
 data class RouteInfoEntity(
     @PrimaryKey(autoGenerate = true) val id: Int,
     val routeNumber: Int,
-    val timestamp: TimeMark
+
+    val timestamp: Long
 )
 
 @Entity(
