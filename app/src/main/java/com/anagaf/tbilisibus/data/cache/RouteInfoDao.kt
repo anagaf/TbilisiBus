@@ -10,7 +10,7 @@ abstract class RouteInfoDao {
 
     @Transaction
     @Query("SELECT * FROM RouteInfo WHERE routeNumber = :routeNumber")
-    abstract fun get(routeNumber: Int): RouteInfoWithStopsAndShapePointsEntity
+    abstract fun get(routeNumber: Int): RouteInfoWithStopsAndShapePointsEntity?
 
     @Transaction
     @Query("DELETE FROM RouteInfo WHERE routeNumber = :routeNumber")

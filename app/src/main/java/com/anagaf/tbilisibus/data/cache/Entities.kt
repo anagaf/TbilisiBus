@@ -5,14 +5,16 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 import androidx.room.Relation
+import androidx.room.TypeConverter
+import androidx.room.TypeConverters
 import com.anagaf.tbilisibus.data.Direction
+import kotlinx.datetime.Instant
 
 @Entity(tableName = "RouteInfo")
 data class RouteInfoEntity(
     @PrimaryKey(autoGenerate = true) val id: Int,
     val routeNumber: Int,
-
-    val timestamp: Long
+    val timestamp: Instant
 )
 
 @Entity(
@@ -63,3 +65,11 @@ data class RouteInfoWithStopsAndShapePointsEntity(
     @Relation(parentColumn = "id", entityColumn = "routeInfoId")
     val shapePoints: List<ShapePointEntity>
 )
+
+class InstantConverters {
+    @TypeConverter
+    fun instantFromLong(value: Long): Instant = Instant.fromEpochMilliseconds(value)
+
+    @TypeConverter
+    fun longToInstant(instant: Instant): Long = instant.toEpochMilliseconds()
+}

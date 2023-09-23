@@ -4,12 +4,14 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 
 @Database(
     entities = [RouteInfoEntity::class, StopEntity::class, ShapePointEntity::class],
     version = 1,
     exportSchema = false
 )
+@TypeConverters(InstantConverters::class)
 abstract class CacheDatabase : RoomDatabase() {
     abstract fun routeInfoDao(): RouteInfoDao
 

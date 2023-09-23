@@ -96,12 +96,18 @@ internal object ViewModelHiltModule {
     @ViewModelScoped
     fun provideRouteRepository(
         app: Application,
-        ttcRetrofitService: TtcRetrofitService
+        ttcRetrofitService: TtcRetrofitService,
+        timeProvider: TimeProvider,
+        preferences: Preferences
     ): RouteRepository {
         val busesDataSource = TtcBusesDataSource(ttcRetrofitService)
         val routeInfoDataSource = TtcRouteInfoDataSource(ttcRetrofitService)
         val routeInfoCache =
-            RouteInfoCacheImpl(CacheDatabase.getDatabase(app.applicationContext).routeInfoDao())
+            RouteInfoCacheImpl(
+                CacheDatabase.getDatabase(app.applicationContext).routeInfoDao(),
+                timeProvider,
+                preferences.routeInfoCacheTtl
+            )
         return RouteRepositoryImpl(busesDataSource, routeInfoDataSource, routeInfoCache)
     }
 
