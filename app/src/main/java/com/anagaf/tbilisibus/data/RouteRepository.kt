@@ -3,6 +3,7 @@ package com.anagaf.tbilisibus.data
 import com.anagaf.tbilisibus.data.cache.RouteInfoCache
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import timber.log.Timber
 
 interface RouteRepository {
     suspend fun getRoute(routeNumber: Int): Route
@@ -34,11 +35,14 @@ class RouteRepositoryImpl(
 
 
     private suspend fun getRouteInfo(routeNumber: Int): RouteInfo {
-        var routeInfo = routeInfoCache.getRouteInfo(routeNumber)
-        if (routeInfo == null) {
-            routeInfo = routeInfoDataSource.getRouteInfo(routeNumber)
-            routeInfoCache.setRouteInfo(routeNumber, routeInfo)
+        val cachedRouteInfo = routeInfoCache.getRouteInfo(routeNumber)
+        if (cachedRouteInfo != null) {
+            Timber.d("Read route $routeNumber info from cache")
+            return cachedRouteInfo
         }
-        return routeInfo
+        val removeRouteInfo = routeInfoDataSource.getRouteInfo(routeNumber)
+        Timber.d("Retrieved route $routeNumber info from remote data source")
+        routeInfoCache.setRouteInfo(routeNumber, removeRouteInfo)
+        return removeRouteInfo
     }
 }

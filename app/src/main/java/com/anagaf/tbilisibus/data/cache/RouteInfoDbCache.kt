@@ -6,6 +6,7 @@ import com.anagaf.tbilisibus.data.Stop
 import com.anagaf.tbilisibus.ui.TimeProvider
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.datetime.Instant
+import timber.log.Timber
 import kotlin.time.Duration
 
 class RouteInfoCacheImpl(
@@ -16,7 +17,12 @@ class RouteInfoCacheImpl(
 
     override suspend fun getRouteInfo(routeNumber: Int): RouteInfo? {
         val routeInfo = routeInfoDao.get(routeNumber)
-        if (routeInfo == null || isRouteInfoExpired(routeInfo.routeInfo.timestamp)) {
+        if (routeInfo == null) {
+            Timber.d("Cached route $routeNumber info not found")
+            return null
+        }
+        if (isRouteInfoExpired(routeInfo.routeInfo.timestamp)) {
+            Timber.d("Cached route $routeNumber info expired")
             return null;
         }
 
@@ -63,6 +69,8 @@ class RouteInfoCacheImpl(
             }
         }
         routeInfoDao.insert(routeInfoEntity, stopEntities, shapePointEntities)
+
+        Timber.d("Updated cache route $routeNumber info (${stopEntities.size} stops, ${shapePointEntities.size} shape points)")
     }
 
     private fun isRouteInfoExpired(timestamp: Instant): Boolean =
