@@ -49,16 +49,14 @@ abstract class RouteInfoDao {
     @Transaction
     @Query("")
     suspend fun insert(
-        routeInfo: RouteInfoEntity,
-        stops: List<StopEntity>,
-        shapePoints: List<ShapePointEntity>
+        routeInfo: RouteInfoWithStopsAndShapePoints,
     ) {
-        deleteStops(routeInfo.routeNumber)
-        deleteShapePoints(routeInfo.routeNumber)
-        deleteRouteInfo(routeInfo.routeNumber)
+        deleteStops(routeInfo.routeInfo.routeNumber)
+        deleteShapePoints(routeInfo.routeInfo.routeNumber)
+        deleteRouteInfo(routeInfo.routeInfo.routeNumber)
 
-        insertRouteInfo(routeInfo)
-        insertStops(stops)
-        insertShapePoints(shapePoints)
+        insertRouteInfo(routeInfo.routeInfo)
+        insertStops(routeInfo.stops)
+        insertShapePoints(routeInfo.shapePoints)
     }
 }

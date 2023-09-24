@@ -68,7 +68,13 @@ class RouteInfoCacheImpl(
                 )
             }
         }
-        routeInfoDao.insert(routeInfoEntity, stopEntities, shapePointEntities)
+        routeInfoDao.insert(
+            RouteInfoWithStopsAndShapePoints(
+                routeInfoEntity,
+                stopEntities,
+                shapePointEntities
+            )
+        )
 
         Timber.d("Updated cache route $routeNumber info (${stopEntities.size} stops, ${shapePointEntities.size} shape points)")
     }
