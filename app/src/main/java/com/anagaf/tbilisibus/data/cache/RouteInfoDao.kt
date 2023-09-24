@@ -8,29 +8,57 @@ import androidx.room.Transaction
 @Dao
 abstract class RouteInfoDao {
 
-    @Transaction
     @Query("SELECT * FROM RouteInfo WHERE routeNumber = :routeNumber")
-    abstract fun get(routeNumber: Int): RouteInfoWithStopsAndShapePointsEntity?
+    protected abstract suspend fun getRouteInfo(routeNumber: Int): RouteInfoEntity?
 
-    @Transaction
-    @Query("DELETE FROM RouteInfo WHERE routeNumber = :routeNumber")
-    abstract fun delete(routeNumber: Int)
+    @Query("SELECT * FROM Stops WHERE routeNumber = :routeNumber")
+    protected abstract suspend fun getStops(routeNumber: Int): List<StopEntity>
 
-    @Insert
-    abstract fun insertRouteInfo(routeInfo: RouteInfoEntity)
-
-    @Insert
-    abstract fun insertStops(stops: List<StopEntity>)
-
-    @Insert
-    abstract fun insertShapePoints(shapePoint: List<ShapePointEntity>)
+    @Query("SELECT * FROM ShapePoints WHERE routeNumber = :routeNumber")
+    protected abstract suspend fun getShapePoints(routeNumber: Int): List<ShapePointEntity>
 
     @Transaction
     @Query("")
-    fun insert(routeInfo: RouteInfoWithStopsAndShapePointsEntity) {
-        delete(routeInfo.routeInfo.routeNumber)
-        insertRouteInfo(routeInfo.routeInfo)
-        insertStops(routeInfo.stops)
-        insertShapePoints(routeInfo.shapePoints)
+    suspend fun get(routeNumber: Int): RouteInfoWithStopsAndShapePoints? {
+        val routeInfo = getRouteInfo(routeNumber) ?: return null
+        return RouteInfoWithStopsAndShapePoints(
+            routeInfo,
+            getStops(routeNumber),
+            getShapePoints(routeNumber)
+        )
+    }
+
+    @Query("DELETE FROM RouteInfo WHERE routeNumber = :routeNumber")
+    protected abstract suspend fun deleteRouteInfo(routeNumber: Int)
+
+    @Query("DELETE FROM Stops WHERE routeNumber = :routeNumber")
+    protected abstract suspend fun deleteStops(routeNumber: Int)
+
+    @Query("DELETE FROM ShapePoints WHERE routeNumber = :routeNumber")
+    protected abstract suspend fun deleteShapePoints(routeNumber: Int)
+
+    @Insert
+    protected abstract suspend fun insertRouteInfo(routeInfo: RouteInfoEntity)
+
+    @Insert
+    protected abstract suspend fun insertStops(stops: List<StopEntity>)
+
+    @Insert
+    protected abstract suspend fun insertShapePoints(shapePoint: List<ShapePointEntity>)
+
+    @Transaction
+    @Query("")
+    suspend fun insert(
+        routeInfo: RouteInfoEntity,
+        stops: List<StopEntity>,
+        shapePoints: List<ShapePointEntity>
+    ) {
+        deleteStops(routeInfo.routeNumber)
+        deleteShapePoints(routeInfo.routeNumber)
+        deleteRouteInfo(routeInfo.routeNumber)
+
+        insertRouteInfo(routeInfo)
+        insertStops(stops)
+        insertShapePoints(shapePoints)
     }
 }

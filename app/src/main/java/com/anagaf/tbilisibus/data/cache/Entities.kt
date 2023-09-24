@@ -1,68 +1,38 @@
 package com.anagaf.tbilisibus.data.cache
 
-import androidx.room.Embedded
 import androidx.room.Entity
-import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
-import androidx.room.Relation
 import androidx.room.TypeConverter
-import androidx.room.TypeConverters
 import com.anagaf.tbilisibus.data.Direction
 import kotlinx.datetime.Instant
 
 @Entity(tableName = "RouteInfo")
 data class RouteInfoEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int,
-    val routeNumber: Int,
+    @PrimaryKey val routeNumber: Int,
     val timestamp: Instant
 )
 
-@Entity(
-    tableName = "Stops",
-    foreignKeys = [
-        ForeignKey(
-            entity = RouteInfoEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["routeInfoId"],
-            onDelete = ForeignKey.CASCADE,
-            onUpdate = ForeignKey.CASCADE
-        )
-    ]
-)
+@Entity(tableName = "Stops",)
 data class StopEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int,
-    val routeInfoId: Int,
+    @PrimaryKey(autoGenerate = true) var id: Long = 0,
+    val routeNumber: Int = 0,
     val direction: Direction,
     val latitude: Double,
     val longitude: Double
 )
 
-@Entity(
-    tableName = "ShapePoints",
-    foreignKeys = [
-        androidx.room.ForeignKey(
-            entity = RouteInfoEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["routeInfoId"],
-            onDelete = androidx.room.ForeignKey.CASCADE,
-            onUpdate = androidx.room.ForeignKey.CASCADE
-        )
-    ]
-)
+@Entity(tableName = "ShapePoints")
 data class ShapePointEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int,
-    val routeInfoId: Int,
+    @PrimaryKey(autoGenerate = true) var id: Long = 0,
+    val routeNumber: Int = 0,
     val direction: Direction,
     val latitude: Double,
     val longitude: Double
 )
 
-data class RouteInfoWithStopsAndShapePointsEntity(
-    @Embedded
+data class RouteInfoWithStopsAndShapePoints(
     val routeInfo: RouteInfoEntity,
-    @Relation(parentColumn = "id", entityColumn = "routeInfoId")
     val stops: List<StopEntity>,
-    @Relation(parentColumn = "id", entityColumn = "routeInfoId")
     val shapePoints: List<ShapePointEntity>
 )
 

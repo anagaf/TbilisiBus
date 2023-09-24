@@ -14,7 +14,7 @@ class RouteInfoCacheImpl(
     private val routeInfoTtl: Duration
 ) : RouteInfoCache {
 
-    override fun getRouteInfo(routeNumber: Int): RouteInfo? {
+    override suspend fun getRouteInfo(routeNumber: Int): RouteInfo? {
         val routeInfo = routeInfoDao.get(routeNumber)
         if (routeInfo == null || isRouteInfoExpired(routeInfo.routeInfo.timestamp)) {
             return null;
@@ -39,8 +39,30 @@ class RouteInfoCacheImpl(
         return RouteInfo(stops, shapePoints)
     }
 
-    override fun setRouteInfo(routeNumber: Int, routeInfo: RouteInfo) {
-        // do nothing
+    override suspend fun setRouteInfo(routeNumber: Int, routeInfo: RouteInfo) {
+        val routeInfoEntity =
+            RouteInfoEntity(routeNumber = routeNumber, timestamp = timeProvider.now)
+        val stopEntities = routeInfo.stops.entries.flatMap {
+            it.value.map { stop ->
+                StopEntity(
+                    routeNumber = routeNumber,
+                    direction = it.key,
+                    latitude = stop.position.latitude,
+                    longitude = stop.position.longitude
+                )
+            }
+        }
+        val shapePointEntities = routeInfo.shapePoints.entries.flatMap {
+            it.value.map { stop ->
+                ShapePointEntity(
+                    routeNumber = routeNumber,
+                    direction = it.key,
+                    latitude = stop.position.latitude,
+                    longitude = stop.position.longitude
+                )
+            }
+        }
+        routeInfoDao.insert(routeInfoEntity, stopEntities, shapePointEntities)
     }
 
     private fun isRouteInfoExpired(timestamp: Instant): Boolean =
