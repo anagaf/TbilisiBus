@@ -13,7 +13,6 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.TbilisiBus"
         android:usesCleartextTraffic="true"
@@ -40,7 +39,6 @@
         <activity
             android:name=".ui.MapActivity"
             android:exported="true"
-            android:label="@string/title_activity_compose_main"
             android:theme="@style/Theme.TbilisiBus">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
