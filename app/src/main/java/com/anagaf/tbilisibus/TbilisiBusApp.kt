@@ -1,6 +1,7 @@
 package com.anagaf.tbilisibus
 
 import android.app.Application
+import android.content.pm.ApplicationInfo
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
 import timber.log.Timber.DebugTree
@@ -10,7 +11,8 @@ import timber.log.Timber.DebugTree
 class TbilisiBusApp : Application() {
     override fun onCreate() {
         super.onCreate()
-
-        Timber.plant(DebugTree())
+        if (BuildConfig.DEBUG) {
+            Timber.plant(DebugTree())
+        }
     }
 }
