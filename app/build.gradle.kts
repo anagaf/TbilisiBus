@@ -5,6 +5,8 @@ plugins {
     id("com.google.dagger.hilt.android")
     id("kotlin-kapt")
     id("de.mannodermaus.android-junit5") version "1.9.3.0"
+    id("com.google.firebase.crashlytics")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -124,15 +126,15 @@ dependencies {
     // Room
 
     val roomVersion = "2.5.2"
-
     implementation("androidx.room:room-runtime:$roomVersion")
     annotationProcessor("androidx.room:room-compiler:$roomVersion")
-
-    // To use Kotlin annotation processing tool (kapt)
     kapt("androidx.room:room-compiler:$roomVersion")
-
-    // optional - Kotlin Extensions and Coroutines support for Room
     implementation("androidx.room:room-ktx:$roomVersion")
+
+    // Firebase
+
+    implementation(platform("com.google.firebase:firebase-bom:32.3.1"))
+    implementation("com.google.firebase:firebase-crashlytics-ktx")
 }
 
 // Allow references to generated code
