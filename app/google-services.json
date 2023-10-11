@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "314279922374",
+    "project_id": "tbilisibus",
+    "storage_bucket": "tbilisibus.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:314279922374:android:beee5955d1d7a24bfca5c7",
+        "android_client_info": {
+          "package_name": "com.anagaf.tbilisibus"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD2AUVBQ4b9M5BbYckIvHk-l--a3rIcC5k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
