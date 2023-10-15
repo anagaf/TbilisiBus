@@ -26,6 +26,8 @@ android {
         }
     }
 
+    println("Keystore password ${System.getenv("TBILISI_BUS_SIGNING_STORE_PASSWORD")}")
+
     signingConfigs {
         create("release") {
             storeFile = file("keystore.jks")
