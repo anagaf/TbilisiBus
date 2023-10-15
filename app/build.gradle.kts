@@ -26,8 +26,6 @@ android {
         }
     }
 
-    println("Keystore password ${System.getenv("TBILISI_BUS_SIGNING_STORE_PASSWORD")}")
-
     signingConfigs {
         create("release") {
             storeFile = file("keystore.jks")
@@ -52,6 +50,19 @@ android {
             isDebuggable = true
         }
     }
+
+    afterEvaluate {
+        tasks.getByName("assembleRelease").doLast {
+            copy {
+                from("build/outputs/apk/release/app-release.apk")
+                into("build/")
+                rename {
+                    "TbilisiBus.${defaultConfig.versionName}.apk"
+                }
+            }
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

@@ -49,13 +49,14 @@ jobs:
           TBILISI_BUS_SIGNING_KEY_PASSWORD: ${{ secrets.TBILISI_BUS_SIGNING_KEY_PASSWORD }}
           TBILISI_BUS_SIGNING_STORE_PASSWORD: ${{ secrets.TBILISI_BUS_SIGNING_STORE_PASSWORD }}
 
-      # Show information about the APK's signing certificates
-#      - name: Verify Signature
-#        run: $ANDROID_SDK_ROOT/build-tools/33.0.1/apksigner verify --print-certs app/build/outputs/apk/release/<<application name>>_${{ github.event.inputs.version }}.apk
+      #      - name: Verify Signature
+      #        run: $ANDROID_SDK_ROOT/build-tools/33.0.1/apksigner verify --print-certs app/build/outputs/apk/release/<<application name>>_${{ github.event.inputs.version }}.apk
 
-      # Save the APK after the Build job is complete to publish it as a Github release in the next job
-#      - name: Upload APK
-#        uses: actions/upload-artifact@v3.1.2
-#        with:
-#          name: <<application name>>
-#          path: app/build/outputs/apk/release/<<application name>>_${{ github.event.inputs.version }}.apk
+      - name: Add build number to APK
+        run: mv app/build/*.apk app/build/*.${{ github.run_number }}.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: TbilisiBus release APK
+          path: app/build/TbilisiBus?.apk
