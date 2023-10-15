@@ -34,7 +34,7 @@ jobs:
           maps_api_key: ${{ secrets.MAPS_API_KEY }}
         run: echo MAPS_API_KEY=\"$maps_api_key\" > ./local.properties
 
-      - name: Decode Keystore
+      - name: Decode keystore
         id: decode_keystore
         uses: timheuer/base64-to-file@v1.2
         with:
@@ -42,16 +42,8 @@ jobs:
           fileDir: '/home/runner/work/TbilisiBus/TbilisiBus/app/'
           encodedString: ${{ secrets.TBILISI_BUS_KEYSTORE }}
 
-      - run: echo "Building Debug APK."
-      - name: Build with Gradle
-        run: ./gradlew build
-      - run: echo "Build status report=${{ job.status }}."
-
-      - run: echo "TBILISI_BUS_SIGNING_STORE_PASSWORD = ${{ secrets.TBILISI_BUS_SIGNING_STORE_PASSWORD }}."
-
-      # Build and sign APK ("-x test" argument is used to skip tests)
-      - name: Build release APK
-        run: ./gradlew :app:assembleRelease -x test
+      - name: Assemble
+        run: ./gradlew :app:assemble
         env:
           TBILISI_BUS_SIGNING_KEY_ALIAS: ${{ secrets.TBILISI_BUS_SIGNING_KEY_ALIAS }}
           TBILISI_BUS_SIGNING_KEY_PASSWORD: ${{ secrets.TBILISI_BUS_SIGNING_KEY_PASSWORD }}
