@@ -34,13 +34,6 @@ jobs:
           maps_api_key: ${{ secrets.MAPS_API_KEY }}
         run: echo MAPS_API_KEY=\"$maps_api_key\" > ./local.properties
 
-      - run: echo "Building Debug APK."
-      - name: Build with Gradle
-        run: ./gradlew build
-      - run: echo "Build status report=${{ job.status }}."
-
-      # Here we need to decode keystore.jks from base64 string and place it
-      # in the folder specified in the release signing configuration
       - name: Decode Keystore
         id: decode_keystore
         uses: timheuer/base64-to-file@v1.2
@@ -48,6 +41,11 @@ jobs:
           fileName: 'keystore.jks'
           fileDir: '/home/runner/work/TbilisiBus/TbilisiBus/app/'
           encodedString: ${{ secrets.KEYSTORE }}
+
+      - run: echo "Building Debug APK."
+      - name: Build with Gradle
+        run: ./gradlew build
+      - run: echo "Build status report=${{ job.status }}."
 
       # Build and sign APK ("-x test" argument is used to skip tests)
       - name: Build release APK
