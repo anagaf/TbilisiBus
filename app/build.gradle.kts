@@ -26,14 +26,25 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("keystore.jks")
+            storePassword = System.getenv("TBILISI_BUS_SIGNING_STORE_PASSWORD")
+            keyAlias = System.getenv("TBILISI_BUS_SIGNING_KEY_ALIAS")
+            keyPassword = System.getenv("TBILISI_BUS_SIGNING_KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
         release {
             isDebuggable = false
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
+                "retrofit2.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
         debug {
             isDebuggable = true
