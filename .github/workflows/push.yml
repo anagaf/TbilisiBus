@@ -47,6 +47,8 @@ jobs:
         run: ./gradlew build
       - run: echo "Build status report=${{ job.status }}."
 
+      - run: echo "TBILISI_BUS_SIGNING_STORE_PASSWORD = ${{ secrets.TBILISI_BUS_SIGNING_STORE_PASSWORD }}."
+
       # Build and sign APK ("-x test" argument is used to skip tests)
       - name: Build release APK
         run: ./gradlew :app:assembleRelease -x test
