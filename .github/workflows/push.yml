@@ -45,15 +45,10 @@ jobs:
       - name: Assemble
         run: ./gradlew :app:assemble
         env:
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
           TBILISI_BUS_SIGNING_KEY_ALIAS: ${{ secrets.TBILISI_BUS_SIGNING_KEY_ALIAS }}
           TBILISI_BUS_SIGNING_KEY_PASSWORD: ${{ secrets.TBILISI_BUS_SIGNING_KEY_PASSWORD }}
           TBILISI_BUS_SIGNING_STORE_PASSWORD: ${{ secrets.TBILISI_BUS_SIGNING_STORE_PASSWORD }}
-
-      #      - name: Verify Signature
-      #        run: $ANDROID_SDK_ROOT/build-tools/33.0.1/apksigner verify --print-certs app/build/outputs/apk/release/<<application name>>_${{ github.event.inputs.version }}.apk
-
-      - name: Add build number to APK
-        run: mv app/build/*.apk app/build/*.${{ github.run_number }}.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v3.1.2

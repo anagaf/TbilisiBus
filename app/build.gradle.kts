@@ -53,11 +53,12 @@ android {
 
     afterEvaluate {
         tasks.getByName("assembleRelease").doLast {
+            val buildNumber = System.getenv("GITHUB_RUN_NUMBER")?:"999"
             copy {
                 from("build/outputs/apk/release/app-release.apk")
                 into("build/")
                 rename {
-                    "TbilisiBus.${defaultConfig.versionName}.apk"
+                    "TbilisiBus.${defaultConfig.versionName}.$buildNumber.apk"
                 }
             }
         }
