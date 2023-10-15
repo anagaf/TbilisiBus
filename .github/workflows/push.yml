@@ -54,4 +54,4 @@ jobs:
         uses: actions/upload-artifact@v3.1.2
         with:
           name: TbilisiBus release APK
-          path: app/build/TbilisiBus?.apk
+          path: app/build/TbilisiBus*.apk
