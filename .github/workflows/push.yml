@@ -51,9 +51,9 @@ jobs:
       - name: Build release APK
         run: ./gradlew :app:assembleRelease -x test
         env:
-          SIGNING_KEY_ALIAS: ${{ secrets.TBILISI_BUS_SIGNING_KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.TBILISI_BUS_SIGNING_KEY_PASSWORD }}
-          SIGNING_STORE_PASSWORD: ${{ secrets.TBILISI_BUS_SIGNING_STORE_PASSWORD }}
+          TBILISI_BUS_SIGNING_KEY_ALIAS: ${{ secrets.TBILISI_BUS_SIGNING_KEY_ALIAS }}
+          TBILISI_BUS_SIGNING_KEY_PASSWORD: ${{ secrets.TBILISI_BUS_SIGNING_KEY_PASSWORD }}
+          TBILISI_BUS_SIGNING_STORE_PASSWORD: ${{ secrets.TBILISI_BUS_SIGNING_STORE_PASSWORD }}
 
       # Show information about the APK's signing certificates
 #      - name: Verify Signature
