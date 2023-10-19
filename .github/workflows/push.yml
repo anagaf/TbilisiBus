@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - run: echo "The job was automatically triggered by a ${{ github.event_name }} event."
       - run: echo "This job is running on a ${{ runner.os }} server hosted by GitHub!"
@@ -53,4 +53,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v3.1.2
         with:
+          name: TbilisiBus.apk
           path: app/build/TbilisiBus*.apk
+          if-no-files-found: error
