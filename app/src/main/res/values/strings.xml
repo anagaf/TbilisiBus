@@ -11,6 +11,7 @@
     <string name="zoom_in">Zoom In</string>
     <string name="zoom_out">Zoom Out</string>
     <string name="show_route">Show Route</string>
+    <string name="about">About</string>
     <string name="my_location">My Location</string>
 
 </resources>
