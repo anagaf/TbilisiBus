@@ -47,6 +47,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -61,6 +62,7 @@ import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.CameraUpdateFactory.zoomOut
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
@@ -92,6 +94,15 @@ object MarkerIcons {
             Direction.Backward to makeMarkerDrawable(context, R.drawable.backward_stop)
         )
     }
+}
+
+interface MapButtonsClickHandler {
+    fun onZoomIn()
+    fun onZoomOut()
+    fun onChooseRoute()
+    fun onMyLocation()
+    fun onShowRoute()
+    fun onReloadRoute()
 }
 
 @AndroidEntryPoint
@@ -177,21 +188,41 @@ class MapActivity : ComponentActivity() {
             }
 
             if (isMapReady) {
-                MapControlButtons(
-                    cameraPositionState = cameraPositionState,
-                    routeAvailable = uiState.route != null,
-                    onChooseRouteButtonClicked = {
+                val coroutineScope = rememberCoroutineScope()
+                val clickHandler = object : MapButtonsClickHandler {
+                    override fun onZoomIn() {
+                        coroutineScope.launch {
+                            cameraPositionState.animate(CameraUpdateFactory.zoomIn())
+                        }
+                    }
+
+                    override fun onZoomOut() {
+                        coroutineScope.launch {
+                            cameraPositionState.animate(CameraUpdateFactory.zoomOut())
+                        }
+                    }
+
+                    override fun onChooseRoute() {
                         viewModel.onChooseRouteButtonClicked()
-                    },
-                    onMyLocationButtonClicked = {
+                    }
+
+                    override fun onMyLocation() {
                         viewModel.onMyLocationButtonClicked()
-                    },
-                    onShowRouteButtonClicked = {
+                    }
+
+                    override fun onShowRoute() {
                         viewModel.onZoomToShowRouteButtonClicked()
-                    },
-                    onReloadRouteButtonClicked = {
+                    }
+
+                    override fun onReloadRoute() {
                         viewModel.onReloadRouteButtonClicked()
-                    }, locationPermissionState.status.isGranted
+                    }
+
+                }
+                MapControlButtons(
+                    routeAvailable = uiState.route != null,
+                    clickHandler = clickHandler,
+                    myLocationButtonEnabled = locationPermissionState.status.isGranted
                 )
 
                 if (uiState.routeNumberDialogRequired) {
@@ -338,12 +369,8 @@ fun RouteShape(shapePoints: List<ShapePoint>, direction: Direction) {
 
 @Composable
 private fun MapControlButtons(
-    cameraPositionState: CameraPositionState,
     routeAvailable: Boolean,
-    onChooseRouteButtonClicked: () -> Unit = {},
-    onMyLocationButtonClicked: () -> Unit = {},
-    onShowRouteButtonClicked: () -> Unit = {},
-    onReloadRouteButtonClicked: () -> Unit = {},
+    clickHandler: MapButtonsClickHandler,
     myLocationButtonEnabled: Boolean
 ) {
     Column(
@@ -353,55 +380,41 @@ private fun MapControlButtons(
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.Center,
     ) {
-        val coroutineScope = rememberCoroutineScope()
         MapControlButton(
-            onClick = {
-                onChooseRouteButtonClicked()
-            }, drawableId = R.drawable.bus,
+            onClick = { clickHandler.onChooseRoute() },
+            drawableId = R.drawable.bus,
             contentDescriptionId = R.string.choose_route
         )
         if (routeAvailable) {
             MapControlButton(
-                onClick = {
-                    onReloadRouteButtonClicked()
-                }, drawableId = R.drawable.reload,
+                onClick = { clickHandler.onReloadRoute() },
+                drawableId = R.drawable.reload,
                 contentDescriptionId = R.string.reload_route
             )
         }
         MapControlButtonSpacer()
         if (myLocationButtonEnabled) {
             MapControlButton(
-                onClick = {
-                    onMyLocationButtonClicked()
-                },
+                onClick = { clickHandler.onMyLocation() },
                 drawableId = R.drawable.my_location,
                 contentDescriptionId = R.string.my_location,
             )
         }
         MapControlButtonSpacer()
         MapControlButton(
-            onClick = {
-                coroutineScope.launch {
-                    cameraPositionState.animate(CameraUpdateFactory.zoomIn())
-                }
-            }, drawableId = R.drawable.zoom_in,
+            onClick = { clickHandler.onZoomIn() },
+            drawableId = R.drawable.zoom_in,
             contentDescriptionId = R.string.zoom_in
         )
         MapControlButton(
-            onClick = {
-                coroutineScope.launch {
-                    cameraPositionState.animate(CameraUpdateFactory.zoomOut())
-                }
-            }, drawableId = R.drawable.zoom_out,
+            onClick = { clickHandler.onZoomOut() },
+            drawableId = R.drawable.zoom_out,
             contentDescriptionId = R.string.zoom_out
         )
         if (routeAvailable) {
             MapControlButton(
-                onClick = {
-                    coroutineScope.launch {
-                        onShowRouteButtonClicked()
-                    }
-                }, drawableId = R.drawable.zoom_to_show_route,
+                onClick = { clickHandler.onShowRoute() },
+                drawableId = R.drawable.zoom_to_show_route,
                 contentDescriptionId = R.string.show_route
             )
         }
@@ -505,8 +518,20 @@ private fun makeMarkerDrawable(context: Context, resId: Int): BitmapDescriptor {
     return BitmapDescriptorFactory.fromBitmap(bitmap)
 }
 
-//@Preview
-//@Composable
-//fun GoogleMapViewPreview() {
-//    GoogleMapView(Modifier.fillMaxSize())
-//}
+@Preview
+@Composable
+fun MapControlButtonsPreview() {
+    val clickHandler = object : MapButtonsClickHandler {
+        override fun onZoomIn() {}
+        override fun onZoomOut() {}
+        override fun onChooseRoute() {}
+        override fun onMyLocation() {}
+        override fun onShowRoute() {}
+        override fun onReloadRoute() {}
+    }
+    MapControlButtons(
+        routeAvailable = true,
+        clickHandler = clickHandler,
+        myLocationButtonEnabled = true
+    )
+}
