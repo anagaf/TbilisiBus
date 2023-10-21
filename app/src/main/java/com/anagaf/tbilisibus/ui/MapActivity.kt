@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
@@ -48,6 +49,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -103,6 +105,7 @@ interface MapButtonsClickHandler {
     fun onMyLocation()
     fun onShowRoute()
     fun onReloadRoute()
+    fun onAbout()
 }
 
 @AndroidEntryPoint
@@ -195,35 +198,40 @@ class MapActivity : ComponentActivity() {
                             cameraPositionState.animate(CameraUpdateFactory.zoomIn())
                         }
                     }
-
                     override fun onZoomOut() {
                         coroutineScope.launch {
                             cameraPositionState.animate(CameraUpdateFactory.zoomOut())
                         }
                     }
-
                     override fun onChooseRoute() {
                         viewModel.onChooseRouteButtonClicked()
                     }
-
                     override fun onMyLocation() {
                         viewModel.onMyLocationButtonClicked()
                     }
-
                     override fun onShowRoute() {
                         viewModel.onZoomToShowRouteButtonClicked()
                     }
-
                     override fun onReloadRoute() {
                         viewModel.onReloadRouteButtonClicked()
                     }
-
+                    override fun onAbout() {
+                        // TODO
+                    }
                 }
                 MapControlButtons(
                     routeAvailable = uiState.route != null,
                     clickHandler = clickHandler,
                     myLocationButtonEnabled = locationPermissionState.status.isGranted
                 )
+
+                if (uiState.routeNumberDialogRequired) {
+                    RouteNumberDialog(onConfirmed = { routeNumber ->
+                        viewModel.onRouteNumberChosen(routeNumber)
+                    }, onDismissed = {
+                        viewModel.onRouteNumberChangeDismissed()
+                    })
+                }
 
                 if (uiState.routeNumberDialogRequired) {
                     RouteNumberDialog(onConfirmed = { routeNumber ->
@@ -378,7 +386,7 @@ private fun MapControlButtons(
             .fillMaxSize()
             .padding(dimensionResource(R.dimen.default_padding)),
         horizontalAlignment = Alignment.End,
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.Bottom,
     ) {
         MapControlButton(
             onClick = { clickHandler.onChooseRoute() },
@@ -418,6 +426,12 @@ private fun MapControlButtons(
                 contentDescriptionId = R.string.show_route
             )
         }
+        Spacer(Modifier.size(Dp(0f), Dp(LocalConfiguration.current.screenHeightDp * 0.1f)))
+        MapControlButton(
+            onClick = { },
+            drawableId = R.drawable.about,
+            contentDescriptionId = R.string.about
+        )
     }
 }
 
@@ -528,6 +542,7 @@ fun MapControlButtonsPreview() {
         override fun onMyLocation() {}
         override fun onShowRoute() {}
         override fun onReloadRoute() {}
+        override fun onAbout() {}
     }
     MapControlButtons(
         routeAvailable = true,
