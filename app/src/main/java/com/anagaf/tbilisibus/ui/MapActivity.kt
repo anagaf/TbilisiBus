@@ -198,25 +198,31 @@ class MapActivity : ComponentActivity() {
                             cameraPositionState.animate(CameraUpdateFactory.zoomIn())
                         }
                     }
+
                     override fun onZoomOut() {
                         coroutineScope.launch {
                             cameraPositionState.animate(CameraUpdateFactory.zoomOut())
                         }
                     }
+
                     override fun onChooseRoute() {
                         viewModel.onChooseRouteButtonClicked()
                     }
+
                     override fun onMyLocation() {
                         viewModel.onMyLocationButtonClicked()
                     }
+
                     override fun onShowRoute() {
                         viewModel.onZoomToShowRouteButtonClicked()
                     }
+
                     override fun onReloadRoute() {
                         viewModel.onReloadRouteButtonClicked()
                     }
+
                     override fun onAbout() {
-                        // TODO
+                        viewModel.onAboutClicked()
                     }
                 }
                 MapControlButtons(
@@ -225,20 +231,16 @@ class MapActivity : ComponentActivity() {
                     myLocationButtonEnabled = locationPermissionState.status.isGranted
                 )
 
-                if (uiState.routeNumberDialogRequired) {
-                    RouteNumberDialog(onConfirmed = { routeNumber ->
-                        viewModel.onRouteNumberChosen(routeNumber)
-                    }, onDismissed = {
-                        viewModel.onRouteNumberChangeDismissed()
-                    })
-                }
+                when (uiState.dialogRequired) {
+                    MapUiState.Dialog.Route ->
+                        RouteNumberDialog(
+                            onConfirmed = { routeNumber -> viewModel.onRouteNumberChosen(routeNumber) },
+                            onDismissed = { viewModel.onRouteNumberChangeDismissed() })
 
-                if (uiState.routeNumberDialogRequired) {
-                    RouteNumberDialog(onConfirmed = { routeNumber ->
-                        viewModel.onRouteNumberChosen(routeNumber)
-                    }, onDismissed = {
-                        viewModel.onRouteNumberChangeDismissed()
-                    })
+                    MapUiState.Dialog.About -> AboutDialog(
+                        onDismissed = { viewModel.onAboutDialogDismissed() })
+
+                    null -> {}
                 }
             }
 
@@ -428,7 +430,7 @@ private fun MapControlButtons(
         }
         Spacer(Modifier.size(Dp(0f), Dp(LocalConfiguration.current.screenHeightDp * 0.1f)))
         MapControlButton(
-            onClick = { },
+            onClick = { clickHandler.onAbout() },
             drawableId = R.drawable.about,
             contentDescriptionId = R.string.about
         )
@@ -457,61 +459,6 @@ private fun MapControlButton(
 @Composable
 private fun MapControlButtonSpacer() {
     Spacer(modifier = Modifier.size(dimensionResource(R.dimen.map_control_gap)))
-}
-
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun RouteNumberDialog(
-    onConfirmed: (number: Int) -> Unit,
-    onDismissed: () -> Unit
-) {
-    var number by remember { mutableStateOf("") }
-    val focusRequester = remember { FocusRequester() }
-
-    AlertDialog(
-        title = {
-            Text(text = stringResource(R.string.choose_route))
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    onConfirmed(number.toInt())
-                },
-                enabled = number.isNotEmpty()
-            ) {
-                Text(text = stringResource(R.string.ok))
-            }
-        },
-        dismissButton = {
-            Button(
-                onClick = {
-                    onDismissed()
-                }
-            ) {
-                Text(text = stringResource(R.string.cancel))
-            }
-        },
-        text = {
-            TextField(
-                value = number,
-                onValueChange = {
-                    if (it.isEmpty() || (it.length <= 3 && it.toIntOrNull() != null)) {
-                        number = it
-                    }
-                },
-                label = {},
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(focusRequester),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            )
-        },
-        onDismissRequest = {}
-    )
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-    }
 }
 
 

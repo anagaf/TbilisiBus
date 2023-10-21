@@ -105,14 +105,14 @@ class MapViewModel @Inject constructor(
 
     fun onRouteNumberChosen(routeNumber: Int) {
         _uiState.update {
-            it.copy(routeNumberDialogRequired = false)
+            it.copy(dialogRequired = null)
         }
         retrieveRoute(routeNumber)
     }
 
     fun onRouteNumberChangeDismissed() {
         _uiState.update {
-            it.copy(routeNumberDialogRequired = false)
+            it.copy(dialogRequired = null)
         }
     }
 
@@ -142,7 +142,7 @@ class MapViewModel @Inject constructor(
 
     private fun requestRouteNumber() {
         _uiState.update {
-            it.copy(routeNumberDialogRequired = true)
+            it.copy(dialogRequired = MapUiState.Dialog.Route)
         }
     }
 
@@ -225,9 +225,7 @@ class MapViewModel @Inject constructor(
     }
 
     fun onChooseRouteButtonClicked() {
-        _uiState.update {
-            it.copy(routeNumberDialogRequired = true)
-        }
+        requestRouteNumber()
     }
 
     fun onErrorMessageShown() {
@@ -241,5 +239,17 @@ class MapViewModel @Inject constructor(
     } catch (ex: Exception) {
         Timber.d("User location is not available: ${ex.message}")
         null
+    }
+
+    fun onAboutClicked() {
+        _uiState.update {
+            it.copy(dialogRequired = MapUiState.Dialog.About)
+        }
+    }
+
+    fun onAboutDialogDismissed() {
+        _uiState.update {
+            it.copy(dialogRequired = null)
+        }
     }
 }
