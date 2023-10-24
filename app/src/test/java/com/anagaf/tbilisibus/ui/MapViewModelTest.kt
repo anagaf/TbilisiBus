@@ -170,7 +170,7 @@ class MapViewModelTest {
         verifyUiState {
             MapUiState(
                 cameraPosition = lastCameraPosition ?: MapViewModel.kInitialCameraPosition,
-                routeNumberDialogRequired = true
+                dialogRequired = MapUiState.Dialog.Route
             )
         }
     }
@@ -270,7 +270,7 @@ class MapViewModelTest {
             viewModel.onMapReady()
 
             verifyUiState {
-                makeRouteUiState(kRoute).copy(routeNumberDialogRequired = true)
+                makeRouteUiState(kRoute).copy(dialogRequired = MapUiState.Dialog.Route)
             }
 
             viewModel.onActivityStop()
@@ -360,7 +360,7 @@ class MapViewModelTest {
         verifyUiState {
             MapUiState(
                 cameraPosition = MapViewModel.kInitialCameraPosition,
-                routeNumberDialogRequired = false
+                dialogRequired = null
             )
         }
     }
@@ -387,7 +387,7 @@ class MapViewModelTest {
         verifyUiState {
             MapUiState(
                 cameraPosition = MapViewModel.kInitialCameraPosition,
-                routeNumberDialogRequired = true
+                dialogRequired = MapUiState.Dialog.Route
             )
         }
     }
