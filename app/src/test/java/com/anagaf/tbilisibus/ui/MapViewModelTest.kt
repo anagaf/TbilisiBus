@@ -393,6 +393,25 @@ class MapViewModelTest {
     }
 
     @Test
+    fun `show and hide About dialog`() {
+        viewModel.onAboutButtonClicked()
+        verifyUiState {
+            MapUiState(
+                cameraPosition = MapViewModel.kInitialCameraPosition,
+                dialogRequired = MapUiState.Dialog.About
+            )
+        }
+
+        viewModel.onAboutDialogDismissed()
+        verifyUiState {
+            MapUiState(
+                cameraPosition = MapViewModel.kInitialCameraPosition,
+                dialogRequired = null
+            )
+        }
+    }
+
+    @Test
     fun `move camera to my location`() {
         coEvery { locationProvider.getLastLocation() } returns kTestCameraPosition.target
         viewModel.onMyLocationButtonClicked()

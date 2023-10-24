@@ -241,7 +241,7 @@ class MapViewModel @Inject constructor(
         null
     }
 
-    fun onAboutClicked() {
+    fun onAboutButtonClicked() {
         _uiState.update {
             it.copy(dialogRequired = MapUiState.Dialog.About)
         }
