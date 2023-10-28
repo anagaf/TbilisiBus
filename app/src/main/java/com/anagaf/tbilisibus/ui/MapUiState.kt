@@ -19,6 +19,7 @@ data class MapUiState(
 
     enum class Dialog {
         Route,
-        About
+        About,
+        OutOfTbilisi
     }
 }

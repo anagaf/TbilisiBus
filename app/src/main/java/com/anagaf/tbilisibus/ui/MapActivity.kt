@@ -225,10 +225,14 @@ class MapActivity : ComponentActivity() {
                     MapUiState.Dialog.Route ->
                         RouteNumberDialog(
                             onConfirmed = { routeNumber -> viewModel.onRouteNumberChosen(routeNumber) },
-                            onDismissed = { viewModel.onRouteNumberChangeDismissed() })
+                            onDismissed = { viewModel.onDialogDismissed() })
 
                     MapUiState.Dialog.About -> AboutDialog(
-                        onDismissed = { viewModel.onAboutDialogDismissed() })
+                        onDismissed = { viewModel.onDialogDismissed() })
+
+                    MapUiState.Dialog.OutOfTbilisi -> OutOfTbilisiDialog(
+                        onMoveAccepted = { viewModel.moveCameraToTbilisi() },
+                        onDismissed = { viewModel.onDialogDismissed() })
 
                     null -> {}
                 }
