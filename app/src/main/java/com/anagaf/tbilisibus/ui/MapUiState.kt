@@ -10,10 +10,16 @@ data class MapUiState(
     val cameraPosition: CameraPosition,
     val cameraBounds: LatLngBounds? = null,
     val route: Route? = null,
-    val routeNumberDialogRequired: Boolean = false
+    val dialogRequired: Dialog? = null
 ) {
     enum class Error {
         RouteNotAvailable,
         LocationNotAvailable
+    }
+
+    enum class Dialog {
+        Route,
+        About,
+        OutOfTbilisi
     }
 }

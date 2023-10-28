@@ -1,0 +1,51 @@
+name: Push
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-22.04
+    steps:
+      - run: echo "The job was automatically triggered by a ${{ github.event_name }} event."
+      - run: echo "This job is running on a ${{ runner.os }} server hosted by GitHub!"
+
+      - uses: actions/checkout@v3
+      - run: echo "The ${{ github.repository }} repository has been cloned."
+
+      - run: echo "Setting up JDK"
+      - name: set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - run: echo "The workflow is now ready to test your code."
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Access MAPS_API_KEY
+        env:
+          maps_api_key: ${{ secrets.MAPS_API_KEY }}
+        run: echo MAPS_API_KEY=\"$maps_api_key\" > ./local.properties
+
+      - name: Decode keystore
+        id: decode_keystore
+        uses: timheuer/base64-to-file@v1.2
+        with:
+          fileName: 'keystore.jks'
+          fileDir: '/home/runner/work/TbilisiBus/TbilisiBus/app/'
+          encodedString: ${{ secrets.TBILISI_BUS_KEYSTORE }}
+
+      - name: Build
+        run: ./gradlew :app:build
+        env:
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          TBILISI_BUS_SIGNING_KEY_ALIAS: ${{ secrets.TBILISI_BUS_SIGNING_KEY_ALIAS }}
+          TBILISI_BUS_SIGNING_KEY_PASSWORD: ${{ secrets.TBILISI_BUS_SIGNING_KEY_PASSWORD }}
+          TBILISI_BUS_SIGNING_STORE_PASSWORD: ${{ secrets.TBILISI_BUS_SIGNING_STORE_PASSWORD }}

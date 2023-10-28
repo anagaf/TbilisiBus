@@ -33,12 +33,17 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
+import java.util.stream.Stream
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
+private val kLocationOutsideTbilisi = LatLng(11.0, 12.0)
+private val kLocationInsideTbilisi = LatLng(41.7225, 44.7925)
 
-private val kTestCameraPosition = CameraPosition.builder().target(LatLng(11.0, 12.0))
+private val kTestCameraPosition = CameraPosition.builder().target(kLocationOutsideTbilisi)
     .zoom(4f)
     .build()
 
@@ -170,7 +175,7 @@ class MapViewModelTest {
         verifyUiState {
             MapUiState(
                 cameraPosition = lastCameraPosition ?: MapViewModel.kInitialCameraPosition,
-                routeNumberDialogRequired = true
+                dialogRequired = MapUiState.Dialog.Route
             )
         }
     }
@@ -187,7 +192,7 @@ class MapViewModelTest {
     @ValueSource(booleans = [true, false])
     fun `retrieve route from provider on route number chosen`(locationAvailable: Boolean) =
         runTest(UnconfinedTestDispatcher()) {
-            val location = LatLng(6.0, 4.0)
+            val location = kLocationInsideTbilisi
 
             if (locationAvailable) {
                 coEvery { locationProvider.getLastLocation() } returns location
@@ -270,7 +275,7 @@ class MapViewModelTest {
             viewModel.onMapReady()
 
             verifyUiState {
-                makeRouteUiState(kRoute).copy(routeNumberDialogRequired = true)
+                makeRouteUiState(kRoute).copy(dialogRequired = MapUiState.Dialog.Route)
             }
 
             viewModel.onActivityStop()
@@ -355,12 +360,12 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `hide route number dialog been dismissed`() {
-        viewModel.onRouteNumberChangeDismissed()
+    fun `hide dialog been dismissed`() {
+        viewModel.onDialogDismissed()
         verifyUiState {
             MapUiState(
                 cameraPosition = MapViewModel.kInitialCameraPosition,
-                routeNumberDialogRequired = false
+                dialogRequired = null
             )
         }
     }
@@ -387,21 +392,36 @@ class MapViewModelTest {
         verifyUiState {
             MapUiState(
                 cameraPosition = MapViewModel.kInitialCameraPosition,
-                routeNumberDialogRequired = true
+                dialogRequired = MapUiState.Dialog.Route
             )
         }
     }
 
     @Test
-    fun `move camera to my location`() {
-        coEvery { locationProvider.getLastLocation() } returns kTestCameraPosition.target
+    fun `show About dialog`() {
+        viewModel.onAboutButtonClicked()
+        verifyUiState {
+            MapUiState(
+                cameraPosition = MapViewModel.kInitialCameraPosition,
+                dialogRequired = MapUiState.Dialog.About
+            )
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [true, false])
+    fun `move camera to my location`(location_inside_tbilisi: Boolean) {
+        val location = if(location_inside_tbilisi) kLocationInsideTbilisi else kLocationOutsideTbilisi
+
+        coEvery { locationProvider.getLastLocation() } returns location
         viewModel.onMyLocationButtonClicked()
         verifyUiState {
             MapUiState(
                 cameraPosition = CameraPosition.builder()
-                    .target(kTestCameraPosition.target)
+                    .target(location)
                     .zoom(MapViewModel.kMyLocationZoom)
                     .build(),
+                dialogRequired = if(location_inside_tbilisi) null else MapUiState.Dialog.OutOfTbilisi
             )
         }
     }

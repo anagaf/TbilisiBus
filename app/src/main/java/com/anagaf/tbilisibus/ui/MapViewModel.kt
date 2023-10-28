@@ -64,32 +64,15 @@ class MapViewModel @Inject constructor(
     }
 
     fun onMyLocationButtonClicked() {
-        moveCameraToCurrentLocation()
-    }
-
-    fun onActivityStart() {
-        startPeriodicRouteUpdate()
-    }
-
-    fun onActivityStop() {
-        stopPeriodicRouteUpdate()
-    }
-
-    private fun moveCameraToCurrentLocation() {
         viewModelScope.launch {
             _uiState.update {
                 it.copy(inProgress = true)
             }
             try {
                 val location = locationProvider.getLastLocation()
-                _uiState.update {
-                    it.copy(
-                        inProgress = false,
-                        cameraPosition = CameraPosition.Builder(it.cameraPosition)
-                            .target(LatLng(location.latitude, location.longitude))
-                            .zoom(kMyLocationZoom)
-                            .build()
-                    )
+                moveCameraTo(location)
+                if (!isTbilisi(location)) {
+                    showOutOfTbilisiDialog()
                 }
             } catch (ex: Exception) {
                 Timber.e("User location is not available: ${ex.message}")
@@ -103,17 +86,47 @@ class MapViewModel @Inject constructor(
         }
     }
 
-    fun onRouteNumberChosen(routeNumber: Int) {
+    private fun showOutOfTbilisiDialog() {
         _uiState.update {
-            it.copy(routeNumberDialogRequired = false)
+            it.copy(
+                dialogRequired = MapUiState.Dialog.OutOfTbilisi,
+            )
         }
-        retrieveRoute(routeNumber)
     }
 
-    fun onRouteNumberChangeDismissed() {
+    fun onActivityStart() {
+        startPeriodicRouteUpdate()
+    }
+
+    fun onActivityStop() {
+        stopPeriodicRouteUpdate()
+    }
+
+    private fun isTbilisi(location: LatLng): Boolean {
+        val leftTop = LatLng(41.88596, 44.5758131)
+        val rightBottom = LatLng(41.48988, 45.1618741)
+        return location.latitude > rightBottom.latitude && location.latitude < leftTop.latitude &&
+                location.longitude > leftTop.longitude && location.longitude < rightBottom.longitude
+    }
+
+    private fun moveCameraTo(location: LatLng) {
         _uiState.update {
-            it.copy(routeNumberDialogRequired = false)
+            it.copy(
+                inProgress = false,
+                cameraPosition = CameraPosition.Builder(it.cameraPosition)
+                    .target(LatLng(location.latitude, location.longitude))
+                    .zoom(kMyLocationZoom)
+                    .build()
+            )
         }
+    }
+
+
+    fun onRouteNumberChosen(routeNumber: Int) {
+        _uiState.update {
+            it.copy(dialogRequired = null)
+        }
+        retrieveRoute(routeNumber)
     }
 
     fun onReloadRouteButtonClicked() {
@@ -142,7 +155,7 @@ class MapViewModel @Inject constructor(
 
     private fun requestRouteNumber() {
         _uiState.update {
-            it.copy(routeNumberDialogRequired = true)
+            it.copy(dialogRequired = MapUiState.Dialog.Route)
         }
     }
 
@@ -159,7 +172,9 @@ class MapViewModel @Inject constructor(
 
                 var bounds = route.bounds
                 getLocationIfAvailable()?.let { location ->
-                    bounds = bounds.including(location)
+                    if (isTbilisi(location)) {
+                        bounds = bounds.including(location)
+                    }
                 }
 
                 _uiState.update {
@@ -225,9 +240,7 @@ class MapViewModel @Inject constructor(
     }
 
     fun onChooseRouteButtonClicked() {
-        _uiState.update {
-            it.copy(routeNumberDialogRequired = true)
-        }
+        requestRouteNumber()
     }
 
     fun onErrorMessageShown() {
@@ -241,5 +254,26 @@ class MapViewModel @Inject constructor(
     } catch (ex: Exception) {
         Timber.d("User location is not available: ${ex.message}")
         null
+    }
+
+    fun onAboutButtonClicked() {
+        _uiState.update {
+            it.copy(dialogRequired = MapUiState.Dialog.About)
+        }
+    }
+
+    fun onDialogDismissed() {
+        _uiState.update {
+            it.copy(dialogRequired = null)
+        }
+    }
+
+    fun moveCameraToTbilisi() {
+        _uiState.update {
+            it.copy(
+                cameraPosition = kInitialCameraPosition,
+                dialogRequired = null
+            )
+        }
     }
 }

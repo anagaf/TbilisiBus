@@ -39,10 +39,10 @@
         <activity
             android:name=".ui.MapActivity"
             android:exported="true"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.TbilisiBus">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
