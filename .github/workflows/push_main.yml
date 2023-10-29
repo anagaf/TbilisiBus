@@ -50,9 +50,16 @@ jobs:
           TBILISI_BUS_SIGNING_KEY_PASSWORD: ${{ secrets.TBILISI_BUS_SIGNING_KEY_PASSWORD }}
           TBILISI_BUS_SIGNING_STORE_PASSWORD: ${{ secrets.TBILISI_BUS_SIGNING_STORE_PASSWORD }}
 
-      - name: Upload APK
+      - name: Upload AAB
         uses: actions/upload-artifact@v3.1.2
         with:
           name: TbilisiBus.aab
           path: app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: TbilisiBus.apk
+          path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
