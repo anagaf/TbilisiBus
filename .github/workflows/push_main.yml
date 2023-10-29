@@ -43,7 +43,7 @@ jobs:
           encodedString: ${{ secrets.TBILISI_BUS_KEYSTORE }}
 
       - name: Assemble
-        run: ./gradlew :app:bundle
+        run: ./gradlew :app:build :app:bundle
         env:
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
           TBILISI_BUS_SIGNING_KEY_ALIAS: ${{ secrets.TBILISI_BUS_SIGNING_KEY_ALIAS }}
