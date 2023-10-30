@@ -125,11 +125,22 @@ class MapActivity : ComponentActivity() {
                 android.Manifest.permission.ACCESS_FINE_LOCATION
             )
 
-            LaunchedEffect(uiState.cameraPosition) {
-                cameraPositionState.animate(
-                    CameraUpdateFactory.newCameraPosition(uiState.cameraPosition),
-                    1_000
-                )
+            if (isMapReady) {
+                LaunchedEffect(uiState.cameraPosition) {
+                    cameraPositionState.animate(
+                        CameraUpdateFactory.newCameraPosition(uiState.cameraPosition),
+                        1_000
+                    )
+                }
+
+                LaunchedEffect(uiState.cameraBounds) {
+                    if (uiState.cameraBounds != null) {
+                        cameraPositionState.animate(
+                            CameraUpdateFactory.newLatLngBounds(uiState.cameraBounds!!, 100),
+                            1_000
+                        )
+                    }
+                }
             }
 
             LaunchedEffect(cameraPositionState.isMoving) {
@@ -138,14 +149,6 @@ class MapActivity : ComponentActivity() {
                 }
             }
 
-            LaunchedEffect(uiState.cameraBounds) {
-                if (uiState.cameraBounds != null) {
-                    cameraPositionState.animate(
-                        CameraUpdateFactory.newLatLngBounds(uiState.cameraBounds!!, 100),
-                        1_000
-                    )
-                }
-            }
 
             LaunchedEffect(uiState.error) {
                 if (uiState.error != null) {
