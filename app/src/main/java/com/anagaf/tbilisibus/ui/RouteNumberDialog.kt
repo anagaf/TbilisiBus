@@ -7,7 +7,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -15,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import com.anagaf.tbilisibus.R
@@ -26,6 +26,7 @@ internal fun RouteNumberDialog(
 ) {
     var number by remember { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
+    var textFieldLoaded by remember { mutableStateOf(false) }
 
     AlertDialog(
         title = {
@@ -61,13 +62,18 @@ internal fun RouteNumberDialog(
                 label = {},
                 modifier = Modifier
                     .fillMaxWidth()
+                    .onGloballyPositioned {
+                        // it's necessary to make sure that the text field has been initialised
+                        // before requesting the focus (see https://stackoverflow.com/a/75104192)
+                        if (!textFieldLoaded) {
+                            focusRequester.requestFocus()
+                            textFieldLoaded = true // stop cyclic recompositions
+                        }
+                    }
                     .focusRequester(focusRequester),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             )
         },
         onDismissRequest = {}
     )
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-    }
 }
