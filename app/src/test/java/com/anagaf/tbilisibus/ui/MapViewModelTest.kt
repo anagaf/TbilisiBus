@@ -28,24 +28,30 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.AfterEachCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
+import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-private val kLocationOutsideTbilisi = LatLng(11.0, 12.0)
-private val kLocationInsideTbilisi = LatLng(41.7225, 44.7925)
+private val kCityLeftTop = LatLng(20.0, 10.0)
+private val kCityRightBottom = LatLng(10.0, 20.0)
+private val kCityCenter = LatLng(15.0, 15.0)
 
-private val kTestCameraPosition = CameraPosition.builder().target(kLocationOutsideTbilisi)
-    .zoom(4f)
-    .build()
+private val kLocationOutsideCity = LatLng(30.0, 30.0)
+private val kLocationInsideCity = LatLng(12.0, 12.0)
+
+private val kTestCameraPosition =
+    CameraPosition.builder().target(kLocationOutsideCity).zoom(4f).build()
 
 private const val kRouteNumber = 123
 
@@ -54,35 +60,29 @@ private fun makeStop(index: Int) = Stop(LatLng(index.toDouble(), (index + 1).toD
 private fun makeShapePoint(index: Int) =
     ShapePoint(LatLng(index.toDouble(), (index + 1).toDouble()))
 
-private val kRoute =
-    Route(
-        number = kRouteNumber,
-        forward = Route.Elements(
-            buses = listOf(makeBus(1), makeBus(2)),
-            stops = listOf(makeStop(1), makeStop(2)),
-            shapePoints = listOf(makeShapePoint(1), makeShapePoint(2))
-        ),
-        backward = Route.Elements(
-            buses = listOf(makeBus(3), makeBus(4)),
-            stops = listOf(makeStop(3), makeStop(4)),
-            shapePoints = listOf(makeShapePoint(3), makeShapePoint(4))
-        )
+private val kRoute = Route(
+    number = kRouteNumber, forward = Route.Elements(
+        buses = listOf(makeBus(11), makeBus(12)),
+        stops = listOf(makeStop(11), makeStop(12)),
+        shapePoints = listOf(makeShapePoint(11), makeShapePoint(12))
+    ), backward = Route.Elements(
+        buses = listOf(makeBus(13), makeBus(14)),
+        stops = listOf(makeStop(13), makeStop(44)),
+        shapePoints = listOf(makeShapePoint(13), makeShapePoint(14))
     )
+)
 
-private val kNewRoute =
-    Route(
-        number = kRouteNumber,
-        forward = Route.Elements(
-            buses = listOf(makeBus(5), makeBus(6)),
-            stops = listOf(makeStop(5), makeStop(6)),
-            shapePoints = listOf(makeShapePoint(5), makeShapePoint(6))
-        ),
-        backward = Route.Elements(
-            buses = listOf(makeBus(7), makeBus(8)),
-            stops = listOf(makeStop(7), makeStop(8)),
-            shapePoints = listOf(makeShapePoint(7), makeShapePoint(8))
-        )
+private val kNewRoute = Route(
+    number = kRouteNumber, forward = Route.Elements(
+        buses = listOf(makeBus(5), makeBus(6)),
+        stops = listOf(makeStop(5), makeStop(6)),
+        shapePoints = listOf(makeShapePoint(5), makeShapePoint(6))
+    ), backward = Route.Elements(
+        buses = listOf(makeBus(7), makeBus(8)),
+        stops = listOf(makeStop(7), makeStop(8)),
+        shapePoints = listOf(makeShapePoint(7), makeShapePoint(8))
     )
+)
 
 private val kCurrentTime = Instant.fromEpochSeconds(1000)
 
@@ -90,6 +90,9 @@ private val kRouteNumberTtl = 5.minutes
 private val kRouteReloadPeriod = 1.seconds
 
 private val kRouteTtl = 1.minutes
+private val kLocationTimeout = 1.seconds;
+
+private val kInitialCameraPosition = CameraPosition.Builder().target(kCityCenter).zoom(12f).build()
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @ExtendWith(MapViewModelTest.TraceUnitExtension::class)
@@ -122,12 +125,17 @@ class MapViewModelTest {
     @BeforeEach
     fun setUp() {
         every { appDataStore.lastCameraPosition } returns null
-        viewModel =
-            MapViewModel(routeRepository, appDataStore, preferences, timeProvider, locationProvider)
 
         every { preferences.routeNumberTtl } returns kRouteNumberTtl
         every { preferences.routeReloadPeriod } returns kRouteReloadPeriod
         every { preferences.routeTtl } returns kRouteTtl
+        every { preferences.locationTimeout } returns kLocationTimeout
+        every { preferences.cityLeftTop } returns kCityLeftTop
+        every { preferences.cityRightBottom } returns kCityRightBottom
+        every { preferences.cityCenter } returns kCityCenter
+
+        viewModel =
+            MapViewModel(routeRepository, appDataStore, preferences, timeProvider, locationProvider)
     }
 
     private fun verifyUiState(expectedBuilder: () -> MapUiState) {
@@ -143,12 +151,11 @@ class MapViewModelTest {
         return bounds
     }
 
-    private fun makeRouteUiState(route: Route, location: LatLng? = null) =
-        MapUiState(
-            cameraPosition = MapViewModel.kInitialCameraPosition,
-            cameraBounds = makeBounds(route, location),
-            route = route
-        )
+    private fun makeRouteUiState(route: Route, location: LatLng? = null) = MapUiState(
+        cameraPosition = kInitialCameraPosition,
+        cameraBounds = makeBounds(route, location),
+        route = route
+    )
 
     private fun prepareRoute() {
         coEvery { routeRepository.getRoute(kRouteNumber) } returns (kRoute)
@@ -159,7 +166,7 @@ class MapViewModelTest {
     fun `move camera to Tbilisi on the very first run`() {
         verifyUiState {
             MapUiState(
-                cameraPosition = MapViewModel.kInitialCameraPosition,
+                cameraPosition = kInitialCameraPosition,
             )
         }
     }
@@ -174,7 +181,7 @@ class MapViewModelTest {
         viewModel.onMapReady()
         verifyUiState {
             MapUiState(
-                cameraPosition = lastCameraPosition ?: MapViewModel.kInitialCameraPosition,
+                cameraPosition = lastCameraPosition ?: kInitialCameraPosition,
                 dialogRequired = MapUiState.Dialog.Route
             )
         }
@@ -188,23 +195,30 @@ class MapViewModelTest {
         assert(arg.captured == kTestCameraPosition)
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = [true, false])
-    fun `retrieve route from provider on route number chosen`(locationAvailable: Boolean) =
-        runTest(UnconfinedTestDispatcher()) {
-            val location = kLocationInsideTbilisi
+    enum class LocationTestCase {
+        AvailableInsideCity, AvailableOutsideCity, NotAvailable
+    }
 
-            if (locationAvailable) {
-                coEvery { locationProvider.getLastLocation() } returns location
-            } else {
-                coEvery { locationProvider.getLastLocation() } throws RuntimeException("Location is not available")
+    @ParameterizedTest
+    @EnumSource(LocationTestCase::class)
+    @Timeout(3)
+    fun `retrieve route from provider on route number chosen`(locationTestCase: LocationTestCase) =
+        runTest(UnconfinedTestDispatcher()) {
+            val location =
+                if (locationTestCase == LocationTestCase.AvailableInsideCity) kLocationInsideCity
+                else kLocationOutsideCity
+
+            coEvery { locationProvider.getLastLocation() } coAnswers {
+                if (locationTestCase == LocationTestCase.NotAvailable) {
+                    TimeUnit.SECONDS.sleep((kLocationTimeout + 1.seconds).inWholeSeconds)
+                }
+                location
             }
 
             val storedLastRouteNumberRequestTime = slot<Instant>()
 
             every {
-                appDataStore.lastRouteNumberRequestTime =
-                    capture(storedLastRouteNumberRequestTime)
+                appDataStore.lastRouteNumberRequestTime = capture(storedLastRouteNumberRequestTime)
             } returns Unit
 
             every { timeProvider.now } returns kCurrentTime
@@ -214,104 +228,96 @@ class MapViewModelTest {
             viewModel.onRouteNumberChosen(kRouteNumber)
 
             verifyUiState {
-                makeRouteUiState(kRoute, if (locationAvailable) location else null)
+                makeRouteUiState(
+                    kRoute,
+                    if (locationTestCase == LocationTestCase.AvailableInsideCity) location else null
+                )
             }
 
             viewModel.onActivityStop()
         }
 
     @Test
-    fun `reload current route`() =
-        runTest(UnconfinedTestDispatcher()) {
-            val firstRequestTime = kCurrentTime
-            val secondRequestTime = firstRequestTime + 1.seconds
-            every { timeProvider.now } returnsMany listOf(
-                firstRequestTime,
-                secondRequestTime
-            )
+    fun `reload current route`() = runTest(UnconfinedTestDispatcher()) {
+        val firstRequestTime = kCurrentTime
+        val secondRequestTime = firstRequestTime + 1.seconds
+        every { timeProvider.now } returnsMany listOf(
+            firstRequestTime, secondRequestTime
+        )
 
-            val storedLastRouteNumberRequestTime = slot<Instant>()
+        val storedLastRouteNumberRequestTime = slot<Instant>()
 
-            every {
-                appDataStore.lastRouteNumberRequestTime =
-                    capture(storedLastRouteNumberRequestTime)
-            } returns Unit
+        every {
+            appDataStore.lastRouteNumberRequestTime = capture(storedLastRouteNumberRequestTime)
+        } returns Unit
 
-            coEvery { routeRepository.getRoute(kRouteNumber) } returnsMany listOf(
-                kRoute,
-                kNewRoute
-            )
+        coEvery { routeRepository.getRoute(kRouteNumber) } returnsMany listOf(
+            kRoute, kNewRoute
+        )
 
-            viewModel.onRouteNumberChosen(kRouteNumber)
-            viewModel.onReloadRouteButtonClicked()
+        viewModel.onRouteNumberChosen(kRouteNumber)
+        viewModel.onReloadRouteButtonClicked()
 
-            verifyUiState {
-                makeRouteUiState(kNewRoute)
-            }
-
-            coVerify(exactly = 2) { routeRepository.getRoute(kRouteNumber) }
-
-            assertEquals(secondRequestTime, storedLastRouteNumberRequestTime.captured)
-
-            viewModel.onActivityStop()
+        verifyUiState {
+            makeRouteUiState(kNewRoute)
         }
+
+        coVerify(exactly = 2) { routeRepository.getRoute(kRouteNumber) }
+
+        assertEquals(secondRequestTime, storedLastRouteNumberRequestTime.captured)
+
+        viewModel.onActivityStop()
+    }
 
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
     fun `show route number dialog on map ready if route number TTL passed`(
         lastRouteNumberRequestTimeAvailable: Boolean
-    ) =
-        runTest(UnconfinedTestDispatcher()) {
-            every { timeProvider.now } returnsMany listOf(
-                kCurrentTime,
-                kCurrentTime + kRouteNumberTtl + 1.seconds
-            )
+    ) = runTest(UnconfinedTestDispatcher()) {
+        every { timeProvider.now } returnsMany listOf(
+            kCurrentTime, kCurrentTime + kRouteNumberTtl + 1.seconds
+        )
 
-            prepareRoute()
+        prepareRoute()
 
-            every { appDataStore.lastRouteNumberRequestTime } returns
-                    if (lastRouteNumberRequestTimeAvailable) kCurrentTime else null
+        every { appDataStore.lastRouteNumberRequestTime } returns if (lastRouteNumberRequestTimeAvailable) kCurrentTime else null
 
-            viewModel.onMapReady()
+        viewModel.onMapReady()
 
-            verifyUiState {
-                makeRouteUiState(kRoute).copy(dialogRequired = MapUiState.Dialog.Route)
-            }
-
-            viewModel.onActivityStop()
+        verifyUiState {
+            makeRouteUiState(kRoute).copy(dialogRequired = MapUiState.Dialog.Route)
         }
+
+        viewModel.onActivityStop()
+    }
 
     @Test
-    fun `reload route on map ready if route TTL passed`() =
-        runTest(UnconfinedTestDispatcher()) {
-            val firstRequestTime = kCurrentTime
-            val secondRequestTime = firstRequestTime + kRouteTtl + 1.seconds
+    fun `reload route on map ready if route TTL passed`() = runTest(UnconfinedTestDispatcher()) {
+        val firstRequestTime = kCurrentTime
+        val secondRequestTime = firstRequestTime + kRouteTtl + 1.seconds
 
-            every { timeProvider.now } returnsMany listOf(
-                firstRequestTime,
-                secondRequestTime,
-                secondRequestTime + 1.seconds
-            )
+        every { timeProvider.now } returnsMany listOf(
+            firstRequestTime, secondRequestTime, secondRequestTime + 1.seconds
+        )
 
-            coEvery { routeRepository.getRoute(kRouteNumber) } returnsMany listOf(
-                kRoute,
-                kNewRoute
-            )
+        coEvery { routeRepository.getRoute(kRouteNumber) } returnsMany listOf(
+            kRoute, kNewRoute
+        )
 
-            viewModel.onRouteNumberChosen(kRouteNumber)
+        viewModel.onRouteNumberChosen(kRouteNumber)
 
-            every { appDataStore.lastRouteNumberRequestTime } returns firstRequestTime
+        every { appDataStore.lastRouteNumberRequestTime } returns firstRequestTime
 
-            viewModel.onMapReady()
+        viewModel.onMapReady()
 
-            verifyUiState {
-                makeRouteUiState(kNewRoute)
-            }
-
-            coVerify(exactly = 2) { routeRepository.getRoute(kRouteNumber) }
-
-            viewModel.onActivityStop()
+        verifyUiState {
+            makeRouteUiState(kNewRoute)
         }
+
+        coVerify(exactly = 2) { routeRepository.getRoute(kRouteNumber) }
+
+        viewModel.onActivityStop()
+    }
 
     @Test
     fun `not reload route on map ready if route TTL not passed`() =
@@ -320,9 +326,7 @@ class MapViewModelTest {
             val secondRequestTime = firstRequestTime + kRouteTtl - 1.seconds
 
             every { timeProvider.now } returnsMany listOf(
-                firstRequestTime,
-                secondRequestTime,
-                secondRequestTime + 1.seconds
+                firstRequestTime, secondRequestTime, secondRequestTime + 1.seconds
             )
 
             coEvery { routeRepository.getRoute(kRouteNumber) } returns kRoute
@@ -343,56 +347,51 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `show error message if cannot retrieve route`() =
-        runTest(UnconfinedTestDispatcher()) {
-            val ex = RuntimeException("Test exception")
+    fun `show error message if cannot retrieve route`() = runTest(UnconfinedTestDispatcher()) {
+        val ex = RuntimeException("Test exception")
 
-            coEvery { routeRepository.getRoute(kRouteNumber) } throws ex
+        coEvery { routeRepository.getRoute(kRouteNumber) } throws ex
 
-            viewModel.onRouteNumberChosen(kRouteNumber)
+        viewModel.onRouteNumberChosen(kRouteNumber)
 
-            verifyUiState {
-                MapUiState(
-                    cameraPosition = MapViewModel.kInitialCameraPosition,
-                    error = MapUiState.Error.RouteNotAvailable
-                )
-            }
+        verifyUiState {
+            MapUiState(
+                cameraPosition = kInitialCameraPosition, error = MapUiState.Error.RouteNotAvailable
+            )
         }
+    }
 
     @Test
     fun `hide dialog been dismissed`() {
         viewModel.onDialogDismissed()
         verifyUiState {
             MapUiState(
-                cameraPosition = MapViewModel.kInitialCameraPosition,
-                dialogRequired = null
+                cameraPosition = kInitialCameraPosition, dialogRequired = null
             )
         }
     }
 
     @Test
-    fun `zoom to show whole route`() =
-        runTest(UnconfinedTestDispatcher()) {
-            every { timeProvider.now } returns kCurrentTime
+    fun `zoom to show whole route`() = runTest(UnconfinedTestDispatcher()) {
+        every { timeProvider.now } returns kCurrentTime
 
-            prepareRoute()
+        prepareRoute()
 
-            viewModel.onZoomToShowRouteButtonClicked()
+        viewModel.onZoomToShowRouteButtonClicked()
 
-            verifyUiState {
-                makeRouteUiState(kRoute)
-            }
-
-            viewModel.onActivityStop()
+        verifyUiState {
+            makeRouteUiState(kRoute)
         }
+
+        viewModel.onActivityStop()
+    }
 
     @Test
     fun `show route number dialog on button clicked`() {
         viewModel.onChooseRouteButtonClicked()
         verifyUiState {
             MapUiState(
-                cameraPosition = MapViewModel.kInitialCameraPosition,
-                dialogRequired = MapUiState.Dialog.Route
+                cameraPosition = kInitialCameraPosition, dialogRequired = MapUiState.Dialog.Route
             )
         }
     }
@@ -402,8 +401,7 @@ class MapViewModelTest {
         viewModel.onAboutButtonClicked()
         verifyUiState {
             MapUiState(
-                cameraPosition = MapViewModel.kInitialCameraPosition,
-                dialogRequired = MapUiState.Dialog.About
+                cameraPosition = kInitialCameraPosition, dialogRequired = MapUiState.Dialog.About
             )
         }
     }
@@ -411,17 +409,15 @@ class MapViewModelTest {
     @ParameterizedTest
     @ValueSource(booleans = [true, false])
     fun `move camera to my location`(location_inside_tbilisi: Boolean) {
-        val location = if(location_inside_tbilisi) kLocationInsideTbilisi else kLocationOutsideTbilisi
+        val location = if (location_inside_tbilisi) kLocationInsideCity else kLocationOutsideCity
 
         coEvery { locationProvider.getLastLocation() } returns location
         viewModel.onMyLocationButtonClicked()
         verifyUiState {
             MapUiState(
-                cameraPosition = CameraPosition.builder()
-                    .target(location)
-                    .zoom(MapViewModel.kMyLocationZoom)
-                    .build(),
-                dialogRequired = if(location_inside_tbilisi) null else MapUiState.Dialog.OutOfTbilisi
+                cameraPosition = CameraPosition.builder().target(location)
+                    .zoom(MapViewModel.kMyLocationZoom).build(),
+                dialogRequired = if (location_inside_tbilisi) null else MapUiState.Dialog.OutOfTbilisi
             )
         }
     }
@@ -433,7 +429,7 @@ class MapViewModelTest {
         viewModel.onMyLocationButtonClicked()
         verifyUiState {
             MapUiState(
-                cameraPosition = MapViewModel.kInitialCameraPosition,
+                cameraPosition = kInitialCameraPosition,
                 error = MapUiState.Error.LocationNotAvailable
             )
         }
@@ -447,7 +443,7 @@ class MapViewModelTest {
         viewModel.onErrorMessageShown()
         verifyUiState {
             MapUiState(
-                cameraPosition = MapViewModel.kInitialCameraPosition,
+                cameraPosition = kInitialCameraPosition,
             )
         }
     }
@@ -486,7 +482,7 @@ class MapViewModelTest {
             assertTrue(count == expectedCount)
 
             val expectedUtState = MapUiState(
-                cameraPosition = MapViewModel.kInitialCameraPosition,
+                cameraPosition = kInitialCameraPosition,
                 // route periodic updates don't cause bounds changes
                 cameraBounds = makeBounds(kRoute),
                 // route periodic updates failures are just ignored

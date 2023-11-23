@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -27,12 +28,13 @@ class MapViewModel @Inject constructor(
 ) : ViewModel() {
 
     companion object {
-        val kInitialCameraPosition = CameraPosition.Builder()
-            .target(LatLng(41.7225, 44.7925)) // Tbilisi center
-            .zoom(12f)
-            .build()
-        val kMyLocationZoom = 15f
+        const val kMyLocationZoom = 15f
     }
+
+    private val kInitialCameraPosition = CameraPosition.Builder()
+        .target(prefs.cityCenter)
+        .zoom(12f)
+        .build();
 
     private val _uiState = MutableStateFlow(
         value = MapUiState(
@@ -42,7 +44,7 @@ class MapViewModel @Inject constructor(
 
     val uiState = _uiState.asStateFlow()
 
-    var routeUpdateJob: Job? = null
+    private var routeUpdateJob: Job? = null
 
     fun onMapReady() {
         if (dataStore.lastCameraPosition != null) {
@@ -71,7 +73,7 @@ class MapViewModel @Inject constructor(
             try {
                 val location = locationProvider.getLastLocation()
                 moveCameraTo(location)
-                if (!isTbilisi(location)) {
+                if (!isInsideCity(location)) {
                     showOutOfTbilisiDialog()
                 }
             } catch (ex: Exception) {
@@ -102,9 +104,9 @@ class MapViewModel @Inject constructor(
         stopPeriodicRouteUpdate()
     }
 
-    private fun isTbilisi(location: LatLng): Boolean {
-        val leftTop = LatLng(41.88596, 44.5758131)
-        val rightBottom = LatLng(41.48988, 45.1618741)
+    private fun isInsideCity(location: LatLng): Boolean {
+        val leftTop = prefs.cityLeftTop
+        val rightBottom = prefs.cityRightBottom
         return location.latitude > rightBottom.latitude && location.latitude < leftTop.latitude &&
                 location.longitude > leftTop.longitude && location.longitude < rightBottom.longitude
     }
@@ -172,7 +174,7 @@ class MapViewModel @Inject constructor(
 
                 var bounds = route.bounds
                 getLocationIfAvailable()?.let { location ->
-                    if (isTbilisi(location)) {
+                    if (isInsideCity(location)) {
                         bounds = bounds.including(location)
                     }
                 }
@@ -250,7 +252,9 @@ class MapViewModel @Inject constructor(
     }
 
     private suspend fun getLocationIfAvailable(): LatLng? = try {
-        locationProvider.getLastLocation()
+        withTimeout(prefs.locationTimeout) {
+            locationProvider.getLastLocation()
+        }
     } catch (ex: Exception) {
         Timber.d("User location is not available: ${ex.message}")
         null

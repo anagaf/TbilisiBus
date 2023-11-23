@@ -4,25 +4,17 @@ import android.annotation.SuppressLint
 import android.content.Context
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLng
-import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.tasks.await
 
 interface LocationProvider {
     suspend fun getLastLocation(): LatLng
 }
 
-class SystemLocationProvider(context:Context) : LocationProvider {
+class SystemLocationProvider(context: Context) : LocationProvider {
     private val client = LocationServices.getFusedLocationProviderClient(context)
 
     @SuppressLint("MissingPermission")
-    override suspend fun getLastLocation(): LatLng {
-        return suspendCoroutine {
-            client.lastLocation.addOnSuccessListener { location ->
-                if (location != null) {
-                    it.resumeWith(Result.success(LatLng(location.latitude, location.longitude)))
-                } else {
-                    it.resumeWith(Result.failure(Exception("Location is not available")))
-                }
-            }
-        }
+    override suspend fun getLastLocation(): LatLng = client.lastLocation.await().let {
+        LatLng(it.latitude, it.longitude)
     }
 }
