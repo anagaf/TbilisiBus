@@ -221,7 +221,8 @@ class MapActivity : ComponentActivity() {
                 MapControlButtons(
                     routeAvailable = uiState.route != null,
                     clickHandler = clickHandler,
-                    myLocationButtonEnabled = locationPermissionState.status.isGranted
+                    myLocationButtonEnabled = locationPermissionState.status.isGranted,
+                    alignment = uiState.alignment,
                 )
 
                 when (uiState.dialogRequired) {
@@ -378,13 +379,14 @@ fun RouteShape(shapePoints: List<ShapePoint>, direction: Direction) {
 private fun MapControlButtons(
     routeAvailable: Boolean,
     clickHandler: MapButtonsClickHandler,
-    myLocationButtonEnabled: Boolean
+    myLocationButtonEnabled: Boolean,
+    alignment: UiAlignment
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(dimensionResource(R.dimen.default_padding)),
-        horizontalAlignment = Alignment.End,
+        horizontalAlignment = if (alignment == UiAlignment.Right) Alignment.End else Alignment.Start,
         verticalArrangement = Arrangement.Bottom,
     ) {
         MapControlButton(
@@ -491,6 +493,7 @@ fun MapControlButtonsPreview() {
     MapControlButtons(
         routeAvailable = true,
         clickHandler = clickHandler,
-        myLocationButtonEnabled = true
+        myLocationButtonEnabled = true,
+        alignment = UiAlignment.Right,
     )
 }

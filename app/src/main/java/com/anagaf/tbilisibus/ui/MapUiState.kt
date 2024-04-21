@@ -5,6 +5,7 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLngBounds
 
 data class MapUiState(
+    val alignment: UiAlignment,
     val inProgress: Boolean = false,
     val error: Error? = null,
     val cameraPosition: CameraPosition,

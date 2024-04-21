@@ -2,6 +2,7 @@ package com.anagaf.tbilisibus.app
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.anagaf.tbilisibus.ui.UiAlignment
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.datetime.Instant
@@ -10,6 +11,7 @@ import javax.inject.Inject
 interface AppDataStore {
     var lastCameraPosition: CameraPosition?
     var lastRouteNumberRequestTime: Instant?
+    var uiAlignment: UiAlignment
 }
 
 class AppDataStoreImpl @Inject constructor(context: Context) : AppDataStore {
@@ -21,6 +23,9 @@ class AppDataStoreImpl @Inject constructor(context: Context) : AppDataStore {
         const val LonKey = "lon"
         const val ZoomKey = "zoom"
         const val LastRouteNumberRequestEpochSecondsKey = "lastRouteNumberRequestTimeInMillis"
+        const val UiAlignmentKey = "uiAlignment"
+        const val UiAlignmentLeft = 1
+        const val UiAlignmentRight = 2
     }
 
     init {
@@ -58,4 +63,20 @@ class AppDataStoreImpl @Inject constructor(context: Context) : AppDataStore {
             prefs.edit().putLong(LastRouteNumberRequestEpochSecondsKey, value!!.epochSeconds)
                 .apply()
         }
+
+    override var uiAlignment: UiAlignment
+        get() =
+            when (prefs.getInt(UiAlignmentKey, UiAlignmentRight)) {
+                UiAlignmentLeft -> UiAlignment.Left
+                UiAlignmentRight -> UiAlignment.Right
+                else -> UiAlignment.Right
+            }
+        set(value) =
+            prefs.edit().putInt(
+                UiAlignmentKey,
+                when (value) {
+                    UiAlignment.Left -> UiAlignmentLeft
+                    UiAlignment.Right -> UiAlignmentRight
+                }
+            ).apply()
 }

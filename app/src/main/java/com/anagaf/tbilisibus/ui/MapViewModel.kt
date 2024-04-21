@@ -39,6 +39,7 @@ class MapViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(
         value = MapUiState(
+            alignment = dataStore.uiAlignment,
             cameraPosition = dataStore.lastCameraPosition ?: kInitialCameraPosition
         )
     )
