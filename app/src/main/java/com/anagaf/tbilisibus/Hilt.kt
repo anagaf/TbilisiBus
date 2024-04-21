@@ -5,16 +5,15 @@ import android.app.Application
 import com.anagaf.tbilisibus.app.AppDataStore
 import com.anagaf.tbilisibus.app.AppDataStoreImpl
 import com.anagaf.tbilisibus.app.Preferences
-import com.anagaf.tbilisibus.app.PreferencesImpl
-import com.anagaf.tbilisibus.data.cache.RouteInfoCacheImpl
 import com.anagaf.tbilisibus.data.RouteRepository
 import com.anagaf.tbilisibus.data.RouteRepositoryImpl
 import com.anagaf.tbilisibus.data.cache.CacheDatabase
+import com.anagaf.tbilisibus.data.cache.RouteInfoCacheImpl
 import com.anagaf.tbilisibus.data.ttc.BusesResponseParser
 import com.anagaf.tbilisibus.data.ttc.DirectionBuses
 import com.anagaf.tbilisibus.data.ttc.RouteInfoResponseParser
-import com.anagaf.tbilisibus.data.ttc.TtcRetrofitService
 import com.anagaf.tbilisibus.data.ttc.TtcBusesDataSource
+import com.anagaf.tbilisibus.data.ttc.TtcRetrofitService
 import com.anagaf.tbilisibus.data.ttc.TtcRouteInfoDataSource
 import com.anagaf.tbilisibus.ui.LocationProvider
 import com.anagaf.tbilisibus.ui.SystemLocationProvider
@@ -119,7 +118,7 @@ internal object ViewModelHiltModule {
     @Provides
     @ViewModelScoped
     fun providePreferences(): Preferences =
-        PreferencesImpl()
+        object : Preferences {}
 
     @Provides
     @ViewModelScoped

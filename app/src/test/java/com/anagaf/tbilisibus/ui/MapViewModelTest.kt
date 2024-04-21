@@ -18,6 +18,8 @@ import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -34,17 +36,16 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.EnumSource
-import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
+import timber.log.Timber
 import java.util.concurrent.TimeUnit
-import java.util.stream.Stream
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-private val kCityLeftTop = LatLng(20.0, 10.0)
-private val kCityRightBottom = LatLng(10.0, 20.0)
+private val kCitySouthWest = LatLng(10.0, 10.0)
+private val kCityNorthEast = LatLng(20.0, 20.0)
 private val kCityCenter = LatLng(15.0, 15.0)
 
 private val kLocationOutsideCity = LatLng(30.0, 30.0)
@@ -90,7 +91,7 @@ private val kRouteNumberTtl = 5.minutes
 private val kRouteReloadPeriod = 1.seconds
 
 private val kRouteTtl = 1.minutes
-private val kLocationTimeout = 1.seconds;
+private val kLocationTimeout = 1.seconds
 
 private val kInitialCameraPosition = CameraPosition.Builder().target(kCityCenter).zoom(12f).build()
 
@@ -130,9 +131,7 @@ class MapViewModelTest {
         every { preferences.routeReloadPeriod } returns kRouteReloadPeriod
         every { preferences.routeTtl } returns kRouteTtl
         every { preferences.locationTimeout } returns kLocationTimeout
-        every { preferences.cityLeftTop } returns kCityLeftTop
-        every { preferences.cityRightBottom } returns kCityRightBottom
-        every { preferences.cityCenter } returns kCityCenter
+        every { preferences.cityBounds } returns LatLngBounds(kCitySouthWest, kCityNorthEast)
 
         viewModel =
             MapViewModel(routeRepository, appDataStore, preferences, timeProvider, locationProvider)
@@ -141,6 +140,12 @@ class MapViewModelTest {
     private fun verifyUiState(expectedBuilder: () -> MapUiState) {
         val expected = expectedBuilder()
         assertEquals(expected, viewModel.uiState.value)
+    }
+
+    private suspend fun waitForUiState(expectedBuilder: () -> MapUiState) {
+        val expected = expectedBuilder()
+        val actual = viewModel.uiState.drop(1).first()
+        assertEquals(actual, expected)
     }
 
     private fun makeBounds(route: Route, location: LatLng? = null): LatLngBounds {
@@ -171,27 +176,51 @@ class MapViewModelTest {
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = [true, false])
-    fun `restore last camera position and show route number dialog on map ready`(
-        lastCameraPositionAvailable: Boolean
-    ) {
-        val lastCameraPosition = if (lastCameraPositionAvailable) kTestCameraPosition else null
-        every { appDataStore.lastCameraPosition } returns lastCameraPosition
+    @Test
+    fun `move camera to initial position and show route number dialog on map ready`() = runTest {
+        Timber.plant(object : Timber.Tree() {
+            override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
+                println("$tag: $message")
+            }
+        })
+
+        every { appDataStore.lastCameraPosition } returns kInitialCameraPosition
+        every { preferences.locationTimeout } returns 300.milliseconds
         viewModel.onMapReady()
         verifyUiState {
             MapUiState(
-                cameraPosition = lastCameraPosition ?: kInitialCameraPosition,
+                cameraPosition = kInitialCameraPosition,
                 dialogRequired = MapUiState.Dialog.Route
             )
         }
     }
 
     @Test
-    fun `store camera position on camera move`() {
+    fun `move camera to location and show route number dialog on map ready`(
+    ) = runTest {
+        val lastLocation = LatLng(1.0, 2.0)
+        val expectedCameraPosition = CameraPosition
+            .Builder()
+            .target(lastLocation)
+            .zoom(MapViewModel.kMyLocationZoom)
+            .build()
+
+        coEvery { locationProvider.getLastLocation() } returns lastLocation
+        viewModel.onMapReady()
+        waitForUiState {
+            MapUiState(
+                cameraPosition = expectedCameraPosition,
+                dialogRequired = MapUiState.Dialog.Route
+            )
+        }
+    }
+
+    @Test
+    fun `store camera position on activity stop`() {
         val arg = slot<CameraPosition>()
         every { appDataStore.lastCameraPosition = capture(arg) } returns Unit
         viewModel.onCameraMove(kTestCameraPosition)
+        viewModel.onActivityStop()
         assert(arg.captured == kTestCameraPosition)
     }
 
@@ -204,9 +233,14 @@ class MapViewModelTest {
     @Timeout(3)
     fun `retrieve route from provider on route number chosen`(locationTestCase: LocationTestCase) =
         runTest(UnconfinedTestDispatcher()) {
+            val invalidLocation = LatLng(50.0, 50.0)
+
             val location =
-                if (locationTestCase == LocationTestCase.AvailableInsideCity) kLocationInsideCity
-                else kLocationOutsideCity
+                when(locationTestCase) {
+                    LocationTestCase.AvailableInsideCity -> kLocationInsideCity
+                    LocationTestCase.AvailableOutsideCity -> kLocationOutsideCity
+                    LocationTestCase.NotAvailable -> invalidLocation
+                }
 
             coEvery { locationProvider.getLastLocation() } coAnswers {
                 if (locationTestCase == LocationTestCase.NotAvailable) {

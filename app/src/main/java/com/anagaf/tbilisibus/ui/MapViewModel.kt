@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import timber.log.Timber
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
 
 @HiltViewModel
 class MapViewModel @Inject constructor(
@@ -32,13 +33,13 @@ class MapViewModel @Inject constructor(
     }
 
     private val kInitialCameraPosition = CameraPosition.Builder()
-        .target(prefs.cityCenter)
+        .target(prefs.cityBounds.center)
         .zoom(12f)
-        .build();
+        .build()
 
     private val _uiState = MutableStateFlow(
         value = MapUiState(
-            cameraPosition = kInitialCameraPosition
+            cameraPosition = dataStore.lastCameraPosition ?: kInitialCameraPosition
         )
     )
 
@@ -47,9 +48,7 @@ class MapViewModel @Inject constructor(
     private var routeUpdateJob: Job? = null
 
     fun onMapReady() {
-        if (dataStore.lastCameraPosition != null) {
-            _uiState.update { it.copy(cameraPosition = dataStore.lastCameraPosition!!) }
-        }
+        moveCameraToLocation()
 
         if (_uiState.value.route == null || shouldRequestRouteNumber()) {
             requestRouteNumber()
@@ -59,7 +58,6 @@ class MapViewModel @Inject constructor(
     }
 
     fun onCameraMove(pos: CameraPosition) {
-        dataStore.lastCameraPosition = pos
         _uiState.update {
             it.copy(cameraPosition = pos, cameraBounds = null)
         }
@@ -101,14 +99,23 @@ class MapViewModel @Inject constructor(
     }
 
     fun onActivityStop() {
+        dataStore.lastCameraPosition = _uiState.value.cameraPosition
         stopPeriodicRouteUpdate()
     }
 
-    private fun isInsideCity(location: LatLng): Boolean {
-        val leftTop = prefs.cityLeftTop
-        val rightBottom = prefs.cityRightBottom
-        return location.latitude > rightBottom.latitude && location.latitude < leftTop.latitude &&
-                location.longitude > leftTop.longitude && location.longitude < rightBottom.longitude
+    private fun isInsideCity(location: LatLng): Boolean =
+        prefs.cityBounds.contains(location)
+
+    private fun moveCameraToLocation() {
+        viewModelScope.launch {
+            getLocationIfAvailable()?.let {
+                // for some reason this camera movement is ignored sometimes, this delay seems to
+                // solve the problem
+                delay(1.seconds)
+                moveCameraTo(it)
+
+            }
+        }
     }
 
     private fun moveCameraTo(location: LatLng) {
@@ -215,8 +222,6 @@ class MapViewModel @Inject constructor(
             if (uiState.value.inProgress) {
                 return@let
             }
-
-            Timber.d("Periodic route $routeNumber update")
 
             try {
                 val route = routeRepository.getRoute(routeNumber)

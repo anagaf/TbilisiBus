@@ -71,6 +71,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
+private const val CAMERA_ANIMATION_DURATION_MS = 1000
+
 object MarkerIcons {
     lateinit var bus: Map<Direction, BitmapDescriptor>
     lateinit var stop: Map<Direction, BitmapDescriptor>
@@ -122,22 +124,20 @@ class MapActivity : ComponentActivity() {
             }
 
             val locationPermissionState = rememberPermissionState(
-                android.Manifest.permission.ACCESS_FINE_LOCATION
+                Manifest.permission.ACCESS_FINE_LOCATION
             )
 
             if (isMapReady) {
-                LaunchedEffect(uiState.cameraPosition) {
-                    cameraPositionState.animate(
-                        CameraUpdateFactory.newCameraPosition(uiState.cameraPosition),
-                        1_000
-                    )
-                }
-
-                LaunchedEffect(uiState.cameraBounds) {
+                LaunchedEffect(uiState.cameraPosition, uiState.cameraBounds) {
                     if (uiState.cameraBounds != null) {
                         cameraPositionState.animate(
                             CameraUpdateFactory.newLatLngBounds(uiState.cameraBounds!!, 100),
-                            1_000
+                            CAMERA_ANIMATION_DURATION_MS
+                        )
+                    } else {
+                        cameraPositionState.animate(
+                            CameraUpdateFactory.newCameraPosition(uiState.cameraPosition),
+                            CAMERA_ANIMATION_DURATION_MS
                         )
                     }
                 }
@@ -283,7 +283,7 @@ class MapActivity : ComponentActivity() {
     private fun isLocationPermissionGranted(): Boolean =
         ContextCompat.checkSelfPermission(
             this,
-            android.Manifest.permission.ACCESS_FINE_LOCATION
+            Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
 
     private fun requestLocationPermission() {
