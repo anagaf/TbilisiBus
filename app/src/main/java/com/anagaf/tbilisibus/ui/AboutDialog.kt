@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -14,18 +15,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withAnnotation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.anagaf.tbilisibus.BuildConfig
 import com.anagaf.tbilisibus.R
-
-
-val kFontSize = 16.sp
 
 @Composable
 internal fun AboutDialog(
@@ -46,17 +42,24 @@ internal fun AboutDialog(
             }
         },
         text = {
-            val spacerSize = 12.dp
             Column {
-                Text(fontSize = kFontSize, text = "Version ${BuildConfig.VERSION_NAME}")
-                Spacer(modifier = Modifier.size(spacerSize))
-                Text(fontSize = kFontSize, text = "Developed by Andrei Agafonov")
-                Spacer(modifier = Modifier.size(spacerSize))
+                ContentText(text = "Version ${BuildConfig.VERSION_NAME}")
+                ContentText(text = "Developed by Andrei Agafonov")
                 IconsByText()
             }
         },
         onDismissRequest = {}
     )
+}
+
+@Composable
+fun ContentText(text: String) {
+    val spacerSize = 12.dp
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyLarge
+    )
+    Spacer(modifier = Modifier.size(spacerSize))
 }
 
 @OptIn(ExperimentalTextApi::class)
@@ -75,7 +78,7 @@ fun IconsByText() {
         }
     }
     val uriHandler = LocalUriHandler.current
-    ClickableText(text = text, style = TextStyle(fontSize = kFontSize)) {
+    ClickableText(text = text, style = MaterialTheme.typography.bodyLarge) {
         text.getStringAnnotations(it, it).firstOrNull()?.tag?.let { tag ->
             if (tag == icon8Tag) {
                 uriHandler.openUri("https://icons8.com/")

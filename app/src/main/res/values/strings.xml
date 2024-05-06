@@ -15,5 +15,9 @@
     <string name="my_location">My Location</string>
     <string name="out_of_tbilisi">Are you out of Tbilisi?</string>
     <string name="go_to_tbilisi">Go to Tbilisi</string>
+    <string name="settings">Settings</string>
+    <string name="left">Left</string>
+    <string name="right">Right</string>
+    <string name="buttons_alignment">Buttons alignment</string>
 
 </resources>

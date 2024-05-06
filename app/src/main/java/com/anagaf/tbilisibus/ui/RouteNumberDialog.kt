@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -17,6 +18,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import com.anagaf.tbilisibus.R
 
 @Composable
@@ -30,7 +32,9 @@ internal fun RouteNumberDialog(
 
     AlertDialog(
         title = {
-            Text(text = stringResource(R.string.choose_route))
+            Text(
+                text = stringResource(R.string.choose_route),
+            )
         },
         confirmButton = {
             Button(
@@ -54,6 +58,7 @@ internal fun RouteNumberDialog(
         text = {
             TextField(
                 value = number,
+                textStyle = MaterialTheme.typography.bodyLarge,
                 onValueChange = {
                     if (it.isEmpty() || (it.length <= 3 && it.toIntOrNull() != null)) {
                         number = it
@@ -76,4 +81,12 @@ internal fun RouteNumberDialog(
         },
         onDismissRequest = {}
     )
+}
+
+@Preview
+@Composable
+fun RouteNumberDialogPreview() {
+    RouteNumberDialog(
+        onConfirmed = {},
+        onDismissed = {})
 }

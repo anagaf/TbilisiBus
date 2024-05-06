@@ -272,6 +272,12 @@ class MapViewModel @Inject constructor(
         }
     }
 
+    fun onSettingsButtonClicked() {
+        _uiState.update {
+            it.copy(dialogRequired = MapUiState.Dialog.Settings)
+        }
+    }
+
     fun onDialogDismissed() {
         _uiState.update {
             it.copy(dialogRequired = null)
@@ -282,6 +288,16 @@ class MapViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 cameraPosition = kInitialCameraPosition,
+                dialogRequired = null
+            )
+        }
+    }
+
+    fun onSettingsDialogConfirmed(uiAlignment: UiAlignment) {
+        dataStore.uiAlignment = uiAlignment
+        _uiState.update {
+            it.copy(
+                alignment = uiAlignment,
                 dialogRequired = null
             )
         }

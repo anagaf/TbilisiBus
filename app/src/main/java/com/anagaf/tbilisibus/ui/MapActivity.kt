@@ -98,6 +98,7 @@ interface MapButtonsClickHandler {
     fun onShowRoute()
     fun onReloadRoute()
     fun onAbout()
+    fun onSettings()
 }
 
 @AndroidEntryPoint
@@ -217,6 +218,10 @@ class MapActivity : ComponentActivity() {
                     override fun onAbout() {
                         viewModel.onAboutButtonClicked()
                     }
+
+                    override fun onSettings() {
+                        viewModel.onSettingsButtonClicked()
+                    }
                 }
                 MapControlButtons(
                     routeAvailable = uiState.route != null,
@@ -236,6 +241,13 @@ class MapActivity : ComponentActivity() {
 
                     MapUiState.Dialog.OutOfTbilisi -> OutOfTbilisiDialog(
                         onMoveAccepted = { viewModel.moveCameraToTbilisi() },
+                        onDismissed = { viewModel.onDialogDismissed() })
+
+                    MapUiState.Dialog.Settings -> SettingsDialog(
+                        uiAlignment = uiState.alignment,
+                        onConfirmed = { uiAlignment ->
+                            viewModel.onSettingsDialogConfirmed(uiAlignment)
+                        },
                         onDismissed = { viewModel.onDialogDismissed() })
 
                     null -> {}
@@ -429,6 +441,12 @@ private fun MapControlButtons(
         }
         Spacer(Modifier.size(Dp(0f), Dp(LocalConfiguration.current.screenHeightDp * 0.1f)))
         MapControlButton(
+            onClick = { clickHandler.onSettings() },
+            drawableId = R.drawable.settings,
+            contentDescriptionId = R.string.settings
+        )
+        MapControlButtonSpacer()
+        MapControlButton(
             onClick = { clickHandler.onAbout() },
             drawableId = R.drawable.about,
             contentDescriptionId = R.string.about
@@ -489,6 +507,7 @@ fun MapControlButtonsPreview() {
         override fun onShowRoute() {}
         override fun onReloadRoute() {}
         override fun onAbout() {}
+        override fun onSettings() {}
     }
     MapControlButtons(
         routeAvailable = true,
