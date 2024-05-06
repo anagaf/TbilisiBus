@@ -15,6 +15,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -94,6 +95,9 @@ private val kRouteTtl = 1.minutes
 private val kLocationTimeout = 1.seconds
 
 private val kInitialCameraPosition = CameraPosition.Builder().target(kCityCenter).zoom(12f).build()
+
+private val kDefaultUiState =
+    MapUiState(alignment = UiAlignment.Right, cameraPosition = kInitialCameraPosition)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @ExtendWith(MapViewModelTest.TraceUnitExtension::class)
@@ -237,7 +241,7 @@ class MapViewModelTest {
             val invalidLocation = LatLng(50.0, 50.0)
 
             val location =
-                when(locationTestCase) {
+                when (locationTestCase) {
                     LocationTestCase.AvailableInsideCity -> kLocationInsideCity
                     LocationTestCase.AvailableOutsideCity -> kLocationOutsideCity
                     LocationTestCase.NotAvailable -> invalidLocation
@@ -526,4 +530,32 @@ class MapViewModelTest {
 
             assertEquals(expectedUtState, viewModel.uiState.value)
         }
+
+    @ParameterizedTest
+    @EnumSource(UiAlignment::class)
+    fun `update UI alignment on setting dialog confirmed`(uiAlignment: UiAlignment) {
+        viewModel.onSettingsDialogConfirmed(uiAlignment)
+        verifyUiState {
+            kDefaultUiState.copy(alignment = uiAlignment, dialogRequired = null)
+        }
+        verify(exactly = 1) {
+            appDataStore.uiAlignment = uiAlignment
+        }
+    }
+
+    @Test
+    fun `show settings dialog`() {
+        viewModel.onSettingsButtonClicked()
+        verifyUiState {
+            kDefaultUiState.copy(dialogRequired = MapUiState.Dialog.Settings)
+        }
+    }
+
+    @Test
+    fun `move camera to Tbilisi`() {
+        viewModel.moveCameraToTbilisi()
+        verifyUiState {
+            kDefaultUiState.copy(cameraPosition = kInitialCameraPosition)
+        }
+    }
 }
