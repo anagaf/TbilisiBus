@@ -126,6 +126,7 @@ class MapViewModelTest {
     @BeforeEach
     fun setUp() {
         every { appDataStore.lastCameraPosition } returns null
+        every { appDataStore.uiAlignment } returns UiAlignment.Right
 
         every { preferences.routeNumberTtl } returns kRouteNumberTtl
         every { preferences.routeReloadPeriod } returns kRouteReloadPeriod
